@@ -66,3 +66,11 @@ button{touch-action:manipulation}#touch button{touch-action:none}
 #touch button.ready{box-shadow:0 0 17px #b288d766;border-color:#dbc2ff;background:#553574aa}
 
 @media(orientation:landscape){#touch button[data-key="Shift"],#touch button[data-key=" "],#touch button[data-key="e"]{font-size:10px}#touch button[data-key="j"]{font-size:11px}}
+
+@media(orientation:landscape){#touch button[data-key="x"]{right:calc(var(--edge) + 69px);bottom:calc(var(--base) + 69px);width:44px;min-width:44px;height:44px;min-height:44px;font-size:7px;border-style:dashed}}
+
+/* Desktop uses the same combat, with a keyboard-first presentation. */
+.desktop #touch{display:none!important}.desktop .keys-preview{display:block}.desktop .objective small{display:none}
+.desktop .vitals{width:180px}.desktop .keys-preview{font-size:12px;line-height:1.8;max-width:430px}
+
+#menu #sound{display:block;margin:14px auto 0;min-height:36px;height:36px;font-size:10px;padding:6px 14px}
