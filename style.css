@@ -10,3 +10,40 @@ html,body{overscroll-behavior:none}body{min-height:100dvh}main{padding:env(safe-
 @media(display-mode:standalone){#install-note details{display:none}}
 main{min-width:0;max-width:100vw}#stage,canvas{min-width:0}
 @media(pointer:coarse){body{display:block}main{width:100%;max-width:100%;}#install-note>*{min-width:0}}
+
+/* Landscape phone: the world fills the viewport; controls float above it. */
+@media (pointer:coarse) and (orientation:landscape){
+ html,body{width:100%;height:100%;overflow:hidden;background:#090e13}
+ main{padding:0;width:100%;height:100dvh;max-width:none}
+ header{position:fixed;z-index:20;top:max(8px,env(safe-area-inset-top));right:calc(max(12px,env(safe-area-inset-right)) + 54px);height:36px;pointer-events:none}
+ header .wordmark,header .chapter,#fullscreen,#install-note,#rotate-hint,footer{display:none}
+ #sound{pointer-events:auto;min-height:36px;height:36px;padding:5px 8px;font-size:8px;letter-spacing:.5px;border-radius:18px;background:#0b14248c}
+ #stage{position:fixed;inset:0;width:100%;height:100dvh;min-height:0;aspect-ratio:auto;border:0;box-shadow:none}
+ #stage canvas{width:100%;height:100%;object-fit:fill}
+ .overlay{inset:0;padding:5% max(6%,env(safe-area-inset-left));z-index:5}
+ .intro-copy h1{font-size:clamp(32px,7vh,54px)}
+ #hud{padding:max(10px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) 0 max(14px,env(safe-area-inset-left))}
+ .vitals{width:144px;background:#09111a85;padding:7px}.name{font-size:9px}.bar{margin-top:6px}#powertext{font-size:7px;letter-spacing:.6px;margin-top:5px}
+ .objective{margin-right:145px;background:#09111a70;padding:4px 8px;border-radius:8px}.objective>span{display:none}.objective strong{font-size:22px}
+ #pause{top:max(8px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));border-radius:50%;width:36px;height:36px;min-height:36px;min-width:36px;padding:0;background:#0b14248c}
+ #caption{bottom:13px;left:25%;width:50%;font-size:12px}#toast{top:24%;padding:0 20%;font-size:10px}
+ #touch{position:absolute;inset:0;display:block;height:auto;pointer-events:none;background:none}
+ #touch span{display:none}
+ #touch button{position:absolute;pointer-events:auto;width:54px;min-width:54px;height:54px;min-height:54px;padding:0;border-radius:50%;border:1px solid #d8c59c80;background:#111b2a85;color:#eee3cf;font:8px Arial;letter-spacing:.2px;box-shadow:0 2px 12px #0004;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+ #touch button[data-key="a"]{left:calc(max(18px,env(safe-area-inset-left)) + 0px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 8px);font-size:23px}
+ #touch button[data-key="d"]{left:calc(max(18px,env(safe-area-inset-left)) + 66px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 8px);font-size:23px}
+ #touch button[data-key="j"]{right:max(18px,env(safe-area-inset-right));bottom:calc(max(16px,env(safe-area-inset-bottom)) + 8px);width:62px;min-width:62px;height:62px;background:#9e784dad;color:#fff3d2;font-size:9px}
+ #touch button[data-key=" "]{right:calc(max(18px,env(safe-area-inset-right)) + 8px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 82px)}
+ #touch button[data-key="Shift"]{right:calc(max(18px,env(safe-area-inset-right)) + 76px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 12px)}
+ #touch button[data-key="e"]{right:calc(max(18px,env(safe-area-inset-right)) + 76px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 82px);border-color:#b998e0aa;background:#38224880}
+ #touch button.held{background:#d9bc82c9;color:#111;transform:scale(.94)}
+}
+
+@media(pointer:coarse) and (orientation:landscape){
+ header{display:none}.objective{margin-right:48px;background:none}.vitals{background:none}#caption{bottom:12px}#stage{background:#090e13}
+}
+@media(pointer:coarse) and (orientation:portrait){
+ html,body{height:100%;overflow:hidden}header,#stage,#install-note,footer{display:none!important}
+ #rotate-hint{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;background:linear-gradient(#08101bcc,#08101bef),url('assets/background.png') center/cover;color:#dcc8a1}
+ .rotate-brand{font:32px Georgia;letter-spacing:8px}.rotate-subtitle{font:18px Georgia;margin-top:12px;color:#b6af9f}.rotate-symbol{font:64px Georgia;margin:38px 0 20px;color:#b99461}#rotate-hint p{font:16px/1.5 Arial;max-width:270px;color:#dcc8a1}
+}

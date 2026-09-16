@@ -1,4 +1,4 @@
-const CACHE='sabbath-mobile-v1';
+const CACHE='sabbath-mobile-v2';
 const FILES=['./','./index.html','./style.css','./engine.js','./game.js','./pwa.js','./manifest.webmanifest','./icons/icon-180.png','./icons/icon-192.png','./icons/icon-512.png','./assets/yaromir-atlas.png','./assets/yaromir-demon-atlas.png','./assets/enemies-atlas.png','./assets/background.png','./assets/props-atlas.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(names=>Promise.all(names.filter(name=>name.startsWith('sabbath-mobile-')&&name!==CACHE).map(name=>caches.delete(name)))).then(()=>self.clients.claim())));
