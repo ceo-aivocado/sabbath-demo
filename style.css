@@ -107,3 +107,16 @@ body[data-scene="house"] #interact-hint{bottom:calc(max(16px,env(safe-area-inset
 body[data-scene="house"] #caption{bottom:auto;top:12px}
 
 body[data-scene="house"] #interact-hint{background:none;border:0;box-shadow:none;text-shadow:0 2px 6px #000,0 0 18px #000;color:#e7cea0}
+
+#boss-hud{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:clamp(180px,30vw,340px);text-align:center;color:#dbbe98;font:10px Arial;letter-spacing:1.8px;text-shadow:0 2px 4px #000}#boss-hud>div{height:5px;margin-top:7px;background:#100d12;box-shadow:0 0 0 1px #ae957544}#boss-health{height:100%;display:block;background:linear-gradient(90deg,#653542,#c17b5a);transition:width .12s}#endcopy{max-width:620px;margin:0 auto 17px}#menu>div{max-width:90%;}#continue-level{margin:10px auto 0}
+@media(max-height:430px){#menu h2{font-size:27px;margin:10px 0}#endcopy{font-size:12px;line-height:1.5;max-width:480px}#menu .secondary{margin-top:8px;padding:6px}#boss-hud{top:11px;font-size:8px;letter-spacing:.8px}}
+
+/* Safari can report a stale orientation query during a viewport rotation.
+   The measured viewport also drives the portrait gate and pauses the game. */
+body.phone-portrait{height:100%;overflow:hidden}
+body.phone-portrait header,body.phone-portrait #stage,body.phone-portrait #install-note,body.phone-portrait footer{display:none!important}
+body.phone-portrait #rotate-hint{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;background:linear-gradient(#08101bcc,#08101bef),var(--scene-background,none) center/cover;color:#dcc8a1}
+body.phone-portrait .rotate-brand{font:32px Georgia;letter-spacing:8px}
+body.phone-portrait .rotate-subtitle{font:18px Georgia;margin-top:12px;color:#b6af9f}
+body.phone-portrait .rotate-symbol{font:64px Georgia;margin:38px 0 20px;color:#b99461}
+body.phone-portrait #rotate-hint p{font:16px/1.5 Arial;max-width:270px;color:#dcc8a1}
