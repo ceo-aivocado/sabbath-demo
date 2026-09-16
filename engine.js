@@ -28,7 +28,7 @@ class SabbathGame{
  }
  resolveAttack(){
   const p=this.player;p.attackHit=true;const finisher=this.combo===3,reach=p.lowAttack?82:p.airAttack?104:finisher?120:104;let hits=0;
-  for(const shot of this.projectiles){if(shot.dead||shot.kind!=='spit'||Math.abs(shot.x-p.x)>reach||(shot.x-p.x)*p.attackFacing<-15||Math.abs(shot.z-(p.z+(p.lowAttack?24:55)))>(p.lowAttack?25:65))continue;shot.dead=true;this.charge(10);this.stats.parries++;this.emit('parry',{x:shot.x,z:shot.z})}
+  for(const shot of this.projectiles){if(shot.dead||shot.friendly||shot.kind!=='spit'||Math.abs(shot.x-p.x)>reach||(shot.x-p.x)*p.attackFacing<-15||Math.abs(shot.z-(p.z+(p.lowAttack?24:55)))>(p.lowAttack?25:65))continue;shot.friendly=true;shot.vx=p.attackFacing*420;shot.life=1.4;shot.damage=40;shot.x=p.x+p.attackFacing*30;this.charge(10);this.stats.parries++;this.emit('parry',{x:shot.x,z:shot.z})}
   for(const e of this.enemies){if(e.dead||this.attackTargets.has(e.id)||Math.abs(e.x-p.x)>reach||(e.x-p.x)*p.attackFacing<-20||p.z>(p.airAttack?140:75))continue;
    const armored=e.heavy&&e.phase==='windup'&&e.broken===0&&(p.x-e.x)*e.face>0;
    let damage=p.lowAttack?(e.type==='crawler'?46:23):p.airAttack?42:[0,25,31,48][this.combo];const breaking=p.airAttack||(!p.lowAttack&&finisher)||p.counter>0;
@@ -46,7 +46,7 @@ class SabbathGame{
  }
  dodge(){
   const p=this.player;if(this.mode!=='playing'||p.evadeCd>0||p.transform>0||p.attack>.22)return false;
-  const threat=this.enemies.some(e=>!e.dead&&e.phase==='windup'&&e.timer<.25&&Math.abs(e.x-p.x)<TYPES[e.type].reach+35)||this.projectiles.some(s=>!s.dead&&Math.abs(s.x-p.x)<95&&s.vx*(p.x-s.x)>0);
+  const threat=this.enemies.some(e=>!e.dead&&e.phase==='windup'&&e.timer<.25&&Math.abs(e.x-p.x)<TYPES[e.type].reach+35)||this.projectiles.some(s=>!s.dead&&!s.friendly&&Math.abs(s.x-p.x)<95&&s.vx*(p.x-s.x)>0);
   p.crouching=false;p.evade=.23;p.evadeCd=.70;p.inv=.26;p.attack=0;p.cooldown=Math.min(p.cooldown,.14);
   if(threat){p.counter=1.6;this.charge(25);this.stats.perfectDodges++;this.emit('perfect',p.x)}this.emit('dodge');return true;
  }
@@ -93,7 +93,7 @@ class SabbathGame{
   for(const e of this.enemies){this.tickEnemy(e,dt);if(!e.dead){const bounds=e.id<3?[250,1280]:e.id<6?[1430,2130]:[2330,3460];e.x=clamp(e.x,...bounds);}}
   // Keep silhouettes separate, except during a committed lunge.
   for(let i=0;i<this.enemies.length;i++)for(let j=i+1;j<this.enemies.length;j++){const a=this.enemies[i],b=this.enemies[j];if(a.dead||b.dead||a.phase==='strike'||b.phase==='strike')continue;const d=b.x-a.x;if(Math.abs(d)<38){const push=(38-Math.abs(d))*dt*3,sign=d<0?-1:1;a.x-=push*sign;b.x+=push*sign}}
-  for(const s of this.projectiles){if(s.dead)continue;const old=s.x;s.x+=s.vx*dt;s.life-=dt;const near=p.x>=Math.min(old,s.x)-19&&p.x<=Math.max(old,s.x)+19;const vertical=s.kind==='wave'?p.z<35:Math.abs(s.z-(p.z+(p.crouching?26:52)))<(p.crouching?26:39);if(near&&vertical){this.hurt(s.damage);s.dead=true}if(s.life<=0)s.dead=true}
+  for(const s of this.projectiles){if(s.dead)continue;const old=s.x;s.x+=s.vx*dt;s.life-=dt;const near=p.x>=Math.min(old,s.x)-19&&p.x<=Math.max(old,s.x)+19;const vertical=s.kind==='wave'?p.z<35:Math.abs(s.z-(p.z+(p.crouching?26:52)))<(p.crouching?26:39);if(s.friendly){for(const e of this.enemies){if(!e.dead&&e.x>=Math.min(old,s.x)-20&&e.x<=Math.max(old,s.x)+20){this.damageEnemy(e,s.damage,{stagger:true});s.dead=true;this.emit('reflectedHit',e.x);break;}}}else if(near&&vertical){this.hurt(s.damage);s.dead=true}if(s.life<=0)s.dead=true}
   this.projectiles=this.projectiles.filter(s=>!s.dead);
   for(const [gate,ids] of [[1350,[0,1,2]],[2200,[3,4,5]],[3530,[6,7,8,9]]])if(p.x>gate&&ids.some(i=>!this.enemies[i].dead)){p.x=gate;if(!this.markers.has('gate'+gate)){this.markers.add('gate'+gate);this.emit('toast','ТЕНИ НЕ ВЫПУСКАЮТ. ОЧИСТИ ПУТЬ.')}}
   this.cam+=(clamp(p.x-355,0,this.exit-830)-this.cam)*Math.min(1,dt*4);
