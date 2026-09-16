@@ -111,7 +111,7 @@ function renderBackground(cam,t){rect(0,0,W,H,'#202b3c');if(art.bg){let width=10
  if(cam>2500){glow(3750-cam,397,95,'#c9a25018');if(game.kills===10){ctx.fillStyle='#e3c992';ctx.font='12px Georgia';ctx.textAlign='center';ctx.fillText('ДОМ →',Math.min(895,game.exit-cam),265)}}
  for(const gate of [1350,2200,3530]){let locked=gate===1350?game.enemies.slice(0,3).some(e=>!e.dead):gate===2200?game.enemies.slice(3,6).some(e=>!e.dead):game.enemies.slice(6).some(e=>!e.dead);if(locked){let x=gate-cam;if(x>-60&&x<W+60){for(let i=0;i<8;i++)glow(x+Math.sin(t*2+i)*8,G-i*13,30,'#7b689c09');ctx.strokeStyle='#776f8c40';ctx.lineWidth=1;ctx.beginPath();for(let i=0;i<25;i++){let y=G-i*5,x1=x+Math.sin(i*1.8+t*2)*4;i?ctx.lineTo(x1,y):ctx.moveTo(x1,y)}ctx.stroke()}}}
 }
-function phonePortrait(){return innerHeight>innerWidth}
+function phonePortrait(){return !document.body.classList.contains('desktop')&&innerHeight>innerWidth}
 function fitViewport(){
  if(phonePortrait()&&game.mode==='playing')pause();
  const immersive=innerWidth>=innerHeight;

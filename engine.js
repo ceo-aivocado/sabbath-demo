@@ -46,7 +46,7 @@ class SabbathGame{
  }
  dodge(){
   const p=this.player;if(this.mode!=='playing'||p.evadeCd>0||p.transform>0||p.attack>.22)return false;
-  const threat=this.enemies.some(e=>!e.dead&&e.phase==='windup'&&e.timer<.25&&Math.abs(e.x-p.x)<TYPES[e.type].reach+35)||this.projectiles.some(s=>!s.dead&&!s.friendly&&Math.abs(s.x-p.x)<95&&s.vx*(p.x-s.x)>0);
+  const threat=this.enemies.some(e=>!e.dead&&e.phase==='windup'&&e.timer<.25&&(p.x-e.x)*e.lockedFace>=-24&&Math.abs(e.x-p.x)<TYPES[e.type].reach+35)||this.projectiles.some(s=>!s.dead&&!s.friendly&&Math.abs(s.x-p.x)<95&&s.vx*(p.x-s.x)>0&&(s.kind==='wave'?p.z<35:Math.abs(s.z-(p.z+(p.crouching?26:52)))<(p.crouching?26:39)));
   p.crouching=false;p.evade=.23;p.evadeCd=.70;p.inv=.26;p.attack=0;p.cooldown=Math.min(p.cooldown,.14);
   if(threat){p.counter=1.6;this.charge(25);this.stats.perfectDodges++;this.emit('perfect',p.x)}this.emit('dodge');return true;
  }

@@ -75,12 +75,16 @@ button{touch-action:manipulation}#touch button{touch-action:none}
 .desktop .vitals{width:180px}.desktop .keys-preview{font-size:12px;line-height:1.8;max-width:430px}
 
 #menu #sound{display:block;margin:14px auto 0;min-height:36px;height:36px;font-size:10px;padding:6px 14px}
+
+.edition-links{position:absolute;left:max(6%,env(safe-area-inset-left));bottom:18px;display:flex;gap:14px;align-items:center;font:10px Arial;letter-spacing:.6px}.edition-links a{color:#b9ab91;text-decoration:none;padding:8px 0}.edition-links a:hover{color:#f2d8a4}.edition-links span{color:#6a6d6a}@media(max-height:400px){.edition-links{bottom:8px;font-size:9px}}
+
+@media(orientation:portrait){.desktop #rotate-hint{display:none!important}.desktop header,.desktop footer{display:none!important}.desktop main{padding:0;width:100%;height:100dvh}.desktop #stage{display:block!important;position:fixed;left:0;top:50%;transform:translateY(-50%);width:100vw;height:56.25vw;min-height:0;border:0}.desktop #stage canvas{width:100%;height:100%;object-fit:fill}.desktop .overlay{inset:0;padding:4% 6%}.desktop h1{font-size:clamp(26px,5vw,45px)}.desktop .intro-copy p:not(.brief),.desktop .brief,.desktop .intro-note{display:none}.desktop .keys-preview{font-size:10px}.desktop #caption{bottom:10px}.desktop .edition-links{bottom:8px}}
 </style><link rel="manifest" href="manifest.webmanifest"></head>
 <body class="desktop"><main><header><a class="wordmark" href="#">SABBATH<span>AMONG LIFE AND DEATH</span></a><div class="chapter">ИГРОВОЙ ЭТЮД <i>01</i></div><button id="fullscreen" aria-label="Полный экран">⛶</button></header>
 <section id="stage" aria-label="Игра Sabbath"><canvas id="game" width="960" height="540" tabindex="0" aria-label="Игровое поле. Стрелки влево и вправо — движение, пробел — прыжок, Z — удар, Shift — рывок, C — Навь, стрелка вниз или X — присесть, Escape — пауза"></canvas>
 <div id="hud" hidden><div class="vitals"><div class="name">ЯРОМІР <span id="hptext">100</span></div><div class="bar"><i id="health"></i></div><div class="bar nav"><i id="power"></i></div><small id="powertext">НАВЬ · C</small></div><div class="objective"><span id="area">ПРИСТАНЬ</span><strong id="kills">0 <em>/ 10</em></strong><small>УПЫРЕЙ УНИЧТОЖЕНО</small></div><button id="pause" aria-label="Пауза">Ⅱ</button></div>
 <div id="caption" role="status"></div><div id="toast" role="status"></div>
-<div class="overlay" id="intro"><div class="intro-copy"><div class="eyebrow">ПОЛТАВСКАЯ СЛОБОДА · ПОСЛЕ НАБЕГА</div><h1>Пепел<br>у переправы</h1><p>Река принесла его домой.<br>Тишина встретила первой.</p><p class="brief">Пройди к дому через разорённую слободу.<br>На пути — десять упырей. За спиной — только река.</p><button class="primary" id="start" disabled>ПОДГОТОВКА СЦЕНЫ…</button><div class="keys-preview">← → — идти <b>·</b> Z — сабля <b>·</b> Shift — рывок<br>Пробел — прыжок <b>·</b> ↓ / X — присесть <b>·</b> C — Навь</div></div><div class="intro-note">СИЛА ИМЕЕТ ЦЕНУ <span>✦</span></div></div>
+<div class="overlay" id="intro"><div class="intro-copy"><div class="eyebrow">ПОЛТАВСКАЯ СЛОБОДА · ПОСЛЕ НАБЕГА</div><h1>Пепел<br>у переправы</h1><p>Река принесла его домой.<br>Тишина встретила первой.</p><p class="brief">Пройди к дому через разорённую слободу.<br>На пути — десять упырей. За спиной — только река.</p><button class="primary" id="start" disabled>ПОДГОТОВКА СЦЕНЫ…</button><div class="keys-preview">← → — идти <b>·</b> Z — сабля <b>·</b> Shift — рывок<br>Пробел — прыжок <b>·</b> ↓ / X — присесть <b>·</b> C — Навь</div></div><nav class="edition-links" aria-label="Вариант управления"><a href="mobile.html">Sabbath Mobile</a><span>·</span><a href="desktop.html">Sabbath Desktop</a></nav><div class="intro-note">СИЛА ИМЕЕТ ЦЕНУ <span>✦</span></div></div>
 <div class="overlay center" id="menu" hidden><div><div class="eyebrow" id="endlabel">ПАУЗА</div><h2 id="endtitle">Тишина между ударами</h2><p id="endcopy"></p><button class="primary" id="resume">ПРОДОЛЖИТЬ</button><button id="sound" aria-label="Включить звук">ЗВУК: ВЫКЛ</button><button class="secondary" id="restart">НАЧАТЬ ЗАНОВО</button></div></div>
 <div id="touch" aria-label="Сенсорное управление"><button aria-label="Идти влево" data-key="a">←</button><button aria-label="Идти вправо" data-key="d">→</button><span></span><button aria-label="Прыжок" data-key=" ">ПРЫЖОК</button><button data-key="Shift">РЫВОК</button><button data-key="j">САБЛЯ</button><button data-key="e">НАВЬ</button><button data-key="x" aria-label="Приседание — переключить" aria-pressed="false">ПРИСЕСТЬ</button></div>
 </section><footer><span><kbd>←</kbd><kbd>→</kbd> движение</span><span><kbd>Пробел</kbd> прыжок</span><span><kbd>Z</kbd> сабля</span><span><kbd>Shift</kbd> рывок</span><span><kbd>C</kbd> Навь</span><span><kbd>Esc</kbd> пауза</span><div>ОДНА ПЕРЕПРАВА. ДЕСЯТЬ ТЕНЕЙ.</div></footer><div id="rotate-hint"><div class="rotate-brand">SABBATH</div><div class="rotate-subtitle">Пепел у переправы</div><div class="rotate-symbol" aria-hidden="true">↻</div><p>Поверните телефон горизонтально</p></div></main><script>/* Deterministic combat simulation: world coordinates, no renderer or network. */
@@ -131,7 +135,7 @@ class SabbathGame{
  }
  dodge(){
   const p=this.player;if(this.mode!=='playing'||p.evadeCd>0||p.transform>0||p.attack>.22)return false;
-  const threat=this.enemies.some(e=>!e.dead&&e.phase==='windup'&&e.timer<.25&&Math.abs(e.x-p.x)<TYPES[e.type].reach+35)||this.projectiles.some(s=>!s.dead&&!s.friendly&&Math.abs(s.x-p.x)<95&&s.vx*(p.x-s.x)>0);
+  const threat=this.enemies.some(e=>!e.dead&&e.phase==='windup'&&e.timer<.25&&(p.x-e.x)*e.lockedFace>=-24&&Math.abs(e.x-p.x)<TYPES[e.type].reach+35)||this.projectiles.some(s=>!s.dead&&!s.friendly&&Math.abs(s.x-p.x)<95&&s.vx*(p.x-s.x)>0&&(s.kind==='wave'?p.z<35:Math.abs(s.z-(p.z+(p.crouching?26:52)))<(p.crouching?26:39)));
   p.crouching=false;p.evade=.23;p.evadeCd=.70;p.inv=.26;p.attack=0;p.cooldown=Math.min(p.cooldown,.14);
   if(threat){p.counter=1.6;this.charge(25);this.stats.perfectDodges++;this.emit('perfect',p.x)}this.emit('dodge');return true;
  }
@@ -301,7 +305,7 @@ function renderBackground(cam,t){rect(0,0,W,H,'#202b3c');if(art.bg){let width=10
  if(cam>2500){glow(3750-cam,397,95,'#c9a25018');if(game.kills===10){ctx.fillStyle='#e3c992';ctx.font='12px Georgia';ctx.textAlign='center';ctx.fillText('ДОМ →',Math.min(895,game.exit-cam),265)}}
  for(const gate of [1350,2200,3530]){let locked=gate===1350?game.enemies.slice(0,3).some(e=>!e.dead):gate===2200?game.enemies.slice(3,6).some(e=>!e.dead):game.enemies.slice(6).some(e=>!e.dead);if(locked){let x=gate-cam;if(x>-60&&x<W+60){for(let i=0;i<8;i++)glow(x+Math.sin(t*2+i)*8,G-i*13,30,'#7b689c09');ctx.strokeStyle='#776f8c40';ctx.lineWidth=1;ctx.beginPath();for(let i=0;i<25;i++){let y=G-i*5,x1=x+Math.sin(i*1.8+t*2)*4;i?ctx.lineTo(x1,y):ctx.moveTo(x1,y)}ctx.stroke()}}}
 }
-function phonePortrait(){return innerHeight>innerWidth}
+function phonePortrait(){return !document.body.classList.contains('desktop')&&innerHeight>innerWidth}
 function fitViewport(){
  if(phonePortrait()&&game.mode==='playing')pause();
  const immersive=innerWidth>=innerHeight;
