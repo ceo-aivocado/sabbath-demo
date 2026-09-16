@@ -25,9 +25,10 @@ class SabbathGame{
  }
  start(){this.mode='playing';this.emit('caption',this.chapter===1?'Переправа занята. Следи за замахами — и бей в ответ.':'Сечь молчит. У ворот ещё кто-то остался.');}
  houseWidth(){return Math.max(1280,this.viewWidth)}
+ houseScale(){return this.houseWidth()/1280}
  houseFocus(){
   const p=this.player,w=this.houseWidth(),items=[{id:'cradle',u:.13,title:'ОПРОКИНУТАЯ КОЛЫБЕЛЬ',text:'Пустая. Ни голоса, ни следа. Только рушник на полу.'},{id:'drawing',u:.25,title:'РИСУНОК НА СТЕНЕ',text:'Солнышко. Маленькая фигурка с косой. Здесь её рука ещё ничего не боялась.'},{id:'hearth',u:.47,title:'ОСТЫВШИЙ ОЧАГ',text:'Угли давно почернели. Никто не ждал его у огня.'},{id:'door',u:.89,title:'К СЕЧИ',text:''}];
-  return items.map(item=>({...item,x:item.u*w})).filter(item=>Math.abs(item.x-p.x)<90).sort((a,b)=>Math.abs(a.x-p.x)-Math.abs(b.x-p.x))[0]||null;
+  return items.map(item=>({...item,x:item.u*w})).filter(item=>Math.abs(item.x-p.x)<90*this.houseScale()).sort((a,b)=>Math.abs(a.x-p.x)-Math.abs(b.x-p.x))[0]||null;
  }
  openHouse(){
   this.scene='house';this.mode='house';this.kills=0;this.enemies=[];this.projectiles=[];this.hitstop=0;this.shake=0;this.attackBuffer=0;this.jumpBuffer=0;this.inspected=new Set();
@@ -36,7 +37,7 @@ class SabbathGame{
  }
  enterHouse(){if(this.chapter!==1||this.mode!=='won')return false;this.totalKills+=this.kills;this.player.hp=this.player.maxHp;this.player.knives=3;this.openHouse();this.emit('checkpoint');return true}
  interact(){if(this.mode!=='house')return false;const item=this.houseFocus();if(!item)return false;if(item.id==='door'){const carry=this.checkpoint();this.reset(2,carry);this.start();this.emit('chapter');this.emit('checkpoint');}else{this.inspected.add(item.id);this.emit('inspect',item);}return true}
- tickHouse(dt,input){const p=this.player,axis=Number(!!input.right)-Number(!!input.left),before=p.x;p.moving=!!axis;if(axis)p.face=axis;p.x=clamp(p.x+axis*135*dt,60,this.houseWidth()-65);p.stride+=Math.abs(p.x-before);this.cam+=(clamp(p.x-this.viewWidth*.45,0,this.houseWidth()-this.viewWidth)-this.cam)*Math.min(1,dt*4);}
+ tickHouse(dt,input){const p=this.player,axis=Number(!!input.right)-Number(!!input.left),before=p.x,scale=this.houseScale();p.moving=!!axis;if(axis)p.face=axis;p.x=clamp(p.x+axis*185*scale*dt,85*scale,this.houseWidth()-85*scale);p.moving=Math.abs(p.x-before)>.01;p.stride+=Math.abs(p.x-before)/(2.4*scale);this.cam+=(clamp(p.x-this.viewWidth*.45,0,this.houseWidth()-this.viewWidth)-this.cam)*Math.min(1,dt*4);}
  checkpoint(){return{version:1,scene:this.scene==='house'?'house':'sich',maxHp:this.player.maxHp,hp:this.player.hp,totalKills:this.totalKills,time:this.time,powerUses:this.powerUses,stats:{...this.stats}}}
  restoreCheckpoint(data){
   if(!data||data.version!==1||!['house','sich'].includes(data.scene)||!Number.isFinite(data.maxHp)||data.maxHp<60||data.maxHp>100||!Number.isFinite(data.hp)||data.hp<=0||data.hp>data.maxHp||data.totalKills!==10||!Number.isFinite(data.time)||data.time<0||data.time>1e7||!Number.isInteger(data.powerUses)||data.powerUses<0||data.powerUses>1000)return false;
