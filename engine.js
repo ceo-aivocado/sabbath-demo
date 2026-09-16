@@ -20,7 +20,7 @@ class SabbathGame{
   this.viewWidth=this.viewWidth||960;this.mode='intro';this.time=carry.time||0;this.kills=0;this.cam=0;this.events=[];this.powerUses=0;this.combo=0;this.comboAge=0;this.shake=0;this.hitstop=0;this.projectiles=[];this.nextProjectile=0;this.attackTargets=new Set();this.attackBuffer=0;this.jumpBuffer=0;this.stats={hits:0,perfectDodges:0,parries:0,airHits:0,knifeHits:0,damageTaken:0};
   this.player={x:130,z:0,vz:0,hp:100,maxHp:100,nav:0,face:1,attack:0,cooldown:0,evade:0,evadeCd:0,evadeKind:'forward',evadeDir:1,evadeSpeed:590,inv:0,moving:false,power:0,transform:0,stride:0,counter:0,knives:3,throwCd:0,throwTime:0,throwPending:0,throwFacing:1,airAttack:false,lowAttack:false,crouching:false,attackHit:false};
   const cfg=this.level;this.gates=cfg.gates.map(([x,ids])=>[x,[...ids]]);
-  this.enemies=cfg.types.map((type,i)=>({id:i,type,x:cfg.xs[i],z:0,hp:TYPES[type].hp,maxHp:TYPES[type].hp,heavy:['heavy','captain'].includes(type),bounds:[...cfg.bounds[this.gates.findIndex(g=>g[1].includes(i))]],phase:cfg.buried.includes(i)?'buried':'idle',timer:0,flash:0,face:-1,dead:false,death:0,spawnX:cfg.xs[i],attackNo:0,staggerGuard:0,broken:0,walk:false,hitPlayer:false,lockedFace:-1,move:'thrust'}));
+  this.enemies=cfg.types.map((type,i)=>({id:i,type,x:cfg.xs[i],z:0,hp:TYPES[type].hp,maxHp:TYPES[type].hp,heavy:['heavy','captain'].includes(type),bounds:[...cfg.bounds[this.gates.findIndex(g=>g[1].includes(i))]],phase:cfg.buried.includes(i)?'buried':'idle',timer:0,flash:0,face:-1,dead:false,death:0,spawnX:cfg.xs[i],attackNo:0,staggerGuard:0,broken:0,walk:false,stride:0,hitPlayer:false,lockedFace:-1,move:'thrust'}));
   if(cfg.elite){const elite=this.enemies[cfg.elite[0]];elite.hp=elite.maxHp=cfg.elite[1];elite.elite=true;}
   this.exit=cfg.exit;this.markers=new Set();this.hazards=(cfg.embers||[]).map((x,i)=>({x,width:58,phase:'cooldown',timer:1.8+i*.75,hitPlayer:false,hitIds:new Set()}));
   if(carry.maxHp){this.player.maxHp=carry.maxHp;this.player.hp=clamp(carry.hp,1,carry.maxHp);this.powerUses=carry.powerUses||0;for(const key of Object.keys(this.stats))this.stats[key]=carry.stats?.[key]||0;}
@@ -39,10 +39,10 @@ class SabbathGame{
   this.emit('house');this.emit('caption','Дверь открыта. В доме никто не ответил.');
  }
  enterHouse(){if(this.chapter!==1||this.mode!=='won')return false;this.totalKills+=this.kills;this.player.hp=this.player.maxHp;this.player.knives=3;this.openHouse();this.emit('checkpoint');return true}
- interact(){if(this.mode!=='house')return false;const item=this.houseFocus();if(!item)return false;if(item.id==='door'){const carry=this.checkpoint();this.reset(2,carry);this.start();this.emit('chapter');this.emit('checkpoint');}else{this.inspected.add(item.id);this.emit('inspect',item);}return true}
+ interact(){if(this.mode!=='house')return false;const item=this.houseFocus();if(!item)return false;if(item.id==='door'){const carry=this.checkpoint();this.reset(2,carry);this.emit('chapter');this.start();this.emit('checkpoint');}else{this.inspected.add(item.id);this.emit('inspect',item);}return true}
  tickHouse(dt,input){const p=this.player,axis=Number(!!input.right)-Number(!!input.left),before=p.x,scale=this.houseScale();p.moving=!!axis;if(axis)p.face=axis;p.x=clamp(p.x+axis*185*scale*dt,85*scale,this.houseWidth()-85*scale);p.moving=Math.abs(p.x-before)>.01;p.stride+=Math.abs(p.x-before)/(2.4*scale);this.cam+=(clamp(p.x-this.viewWidth*.45,0,this.houseWidth()-this.viewWidth)-this.cam)*Math.min(1,dt*4);}
  checkpoint(){const next=this.mode==='won'&&this.chapter>=2&&this.chapter<5;return{version:2,scene:this.scene==='house'?'house':CHAPTERS[this.chapter+(next?1:0)].scene,maxHp:this.player.maxHp,hp:next?this.player.maxHp:this.player.hp,totalKills:this.totalKills+(next?this.kills:0),time:this.time,powerUses:this.powerUses,stats:{...this.stats}}}
- advanceChapter(){if(this.mode!=='won'||this.chapter<2||this.chapter>=5)return false;const carry=this.checkpoint();this.reset(this.chapter+1,carry);this.start();this.emit('chapter');this.emit('checkpoint');return true}
+ advanceChapter(){if(this.mode!=='won'||this.chapter<2||this.chapter>=5)return false;const carry=this.checkpoint();this.reset(this.chapter+1,carry);this.emit('chapter');this.start();this.emit('checkpoint');return true}
  restoreCheckpoint(data){
   if(!data||![1,2].includes(data.version))return false;const chapter=data.scene==='house'?1:CHAPTERS.findIndex(c=>c?.scene===data.scene);
   if(chapter<1||data.scene==='riverside'||data.version===1&&!['house','sich'].includes(data.scene)||!Number.isFinite(data.maxHp)||data.maxHp<60||data.maxHp>100||!Number.isFinite(data.hp)||data.hp<=0||data.hp>data.maxHp||data.totalKills!==(data.scene==='house'?10:killsBefore(chapter))||!Number.isFinite(data.time)||data.time<0||data.time>1e7||!Number.isInteger(data.powerUses)||data.powerUses<0||data.powerUses>1000)return false;
@@ -176,7 +176,7 @@ class SabbathGame{
   p.x=clamp(p.x,40,this.exit+60);p.stride+=Math.abs(p.x-beforeX);
   const airborne=p.z>0;p.vz-=1100*dt;p.z=Math.max(0,p.z+p.vz*dt);if(p.z===0){p.vz=0;if(airborne){this.emit('land',p.x);if(this.jumpBuffer>0)this.jump()}}this.jumpBuffer=Math.max(0,this.jumpBuffer-dt);
   if(input.attack||(this.attackBuffer>0&&p.cooldown===0))this.attack();this.attackBuffer=Math.max(0,this.attackBuffer-dt);
-  for(const e of this.enemies){this.tickEnemy(e,dt);if(!e.dead){e.x=clamp(e.x,...e.bounds);}}
+  for(const e of this.enemies){const before=e.x;this.tickEnemy(e,dt);if(!e.dead){e.x=clamp(e.x,...e.bounds);}if(e.walk){const distance=Math.abs(e.x-before);e.stride=(e.stride||0)+distance;e.walk=distance>.001;}}
   this.tickHazards(dt);
   // Keep silhouettes separate, except during a committed lunge.
   for(let i=0;i<this.enemies.length;i++)for(let j=i+1;j<this.enemies.length;j++){const a=this.enemies[i],b=this.enemies[j];if(a.dead||b.dead||['strike','buried','emerge'].includes(a.phase)||['strike','buried','emerge'].includes(b.phase))continue;const d=b.x-a.x;if(Math.abs(d)<38){const push=(38-Math.abs(d))*dt*3,sign=d<0?-1:1;a.x-=push*sign;b.x+=push*sign}}
