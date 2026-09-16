@@ -59,6 +59,10 @@ button{touch-action:manipulation}#touch button{touch-action:none}
  #touch button[data-key="j"]{right:var(--edge);bottom:calc(var(--base) + 60px)}
  #touch button[data-key="e"]{right:calc(var(--edge) + 64px);bottom:var(--base)}
 }
+@media(orientation:landscape){
+ #touch button[data-key="a"],#touch button[data-key="d"]{width:64px;min-width:64px;height:64px;min-height:64px;font-size:27px}
+ #touch button[data-key="d"]{left:calc(max(18px,env(safe-area-inset-left)) + 88px)}
+}
 </style><link rel="manifest" href="manifest.webmanifest"></head>
 <body><main><header><a class="wordmark" href="#">SABBATH<span>AMONG LIFE AND DEATH</span></a><div class="chapter">ИГРОВОЙ ЭТЮД <i>01</i></div><button id="sound" aria-label="Включить звук">ЗВУК: ВЫКЛ</button><button id="fullscreen" aria-label="Полный экран">⛶</button></header>
 <section id="stage" aria-label="Игра Sabbath"><canvas id="game" width="960" height="540" tabindex="0" aria-label="Игровое поле. Стрелки влево и вправо — движение, пробел — прыжок, Z — удар, Shift — рывок, C — Навь, Escape — пауза"></canvas>
