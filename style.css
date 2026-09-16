@@ -93,3 +93,17 @@ button{touch-action:manipulation}#touch button{touch-action:none}
  #touch button[data-key="v"]{left:calc(var(--move-left) + var(--move-size)*2.5 - 25px);bottom:calc(var(--move-bottom) + var(--move-size) + 18px)}
 }
 @media(orientation:landscape) and (max-width:600px){#touch{--move-size:64px}}
+
+
+#story-copy{position:absolute;top:15%;left:26%;width:48%;z-index:3;text-align:center;pointer-events:none;text-shadow:0 2px 8px #000,0 0 25px #000;background:radial-gradient(ellipse,#070b1199,transparent 72%);padding:16px}
+#story-title{font:10px Arial;letter-spacing:2.5px;color:#d6b988;margin-bottom:12px}#story-text{font:clamp(13px,2.2vh,19px)/1.5 Georgia;color:#eee3ca}
+#interact-hint{position:absolute;z-index:4;left:50%;bottom:24px;transform:translateX(-50%);min-height:44px;border-radius:24px;background:#101820b8;font:10px Arial;letter-spacing:1px;border-color:#b59b6977;max-width:46%}
+body[data-scene="house"] #hud .vitals,body[data-scene="house"] #hud .objective,body[data-scene="house"] #touch button[data-key="v"],body[data-scene="house"] #touch button[data-key="e"],body[data-scene="house"] #touch button[data-key="x"],body[data-scene="house"] #touch button[data-key=" "],body[data-scene="house"] #touch button[data-key="Shift"]{display:none}
+body[data-scene="house"] #caption{bottom:84px}
+#fresh-start{margin:10px 0 0;font:10px Arial;padding:5px 0;min-height:28px}#new-run{font-size:9px;opacity:.8}
+@media(max-height:430px){#story-copy{top:10%;left:20%;width:60%;padding:6px}#story-title{margin-bottom:6px;font-size:9px}#interact-hint{bottom:18px;font-size:9px}}
+
+body[data-scene="house"] #interact-hint{bottom:calc(max(16px,env(safe-area-inset-bottom)) + 108px)}
+body[data-scene="house"] #caption{bottom:auto;top:12px}
+
+body[data-scene="house"] #interact-hint{background:none;border:0;box-shadow:none;text-shadow:0 2px 6px #000,0 0 18px #000;color:#e7cea0}
