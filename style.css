@@ -78,3 +78,18 @@ button{touch-action:manipulation}#touch button{touch-action:none}
 .edition-links{position:absolute;left:max(6%,env(safe-area-inset-left));bottom:18px;display:flex;gap:14px;align-items:center;font:10px Arial;letter-spacing:.6px}.edition-links a{color:#b9ab91;text-decoration:none;padding:8px 0}.edition-links a:hover{color:#f2d8a4}.edition-links span{color:#6a6d6a}@media(max-height:400px){.edition-links{bottom:8px;font-size:9px}}
 
 @media(orientation:portrait){.desktop #rotate-hint{display:none!important}.desktop header,.desktop footer{display:none!important}.desktop main{padding:0;width:100%;height:100dvh}.desktop #stage{display:block!important;position:fixed;left:0;top:50%;transform:translateY(-50%);width:100vw;height:56.25vw;min-height:0;border:0}.desktop #stage canvas{width:100%;height:100%;object-fit:fill}.desktop .overlay{inset:0;padding:4% 6%}.desktop h1{font-size:clamp(26px,5vw,45px)}.desktop .intro-copy p:not(.brief),.desktop .brief,.desktop .intro-note{display:none}.desktop .keys-preview{font-size:10px}.desktop #caption{bottom:10px}.desktop .edition-links{bottom:8px}}
+
+@media(orientation:landscape){#touch button[data-key="q"]{left:calc(max(18px,env(safe-area-inset-left)) + 51px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 88px);width:50px;min-width:50px;height:50px;min-height:50px;font-size:9px;border-color:#b9c4c899;background:#23313b99}}
+
+@media(orientation:landscape){#touch button[data-key="q"]{left:calc(max(18px,env(safe-area-inset-left)) + 7px)}#touch button[data-key="v"]{left:calc(max(18px,env(safe-area-inset-left)) + 95px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 88px);width:50px;min-width:50px;height:50px;min-height:50px;font-size:8px;border-color:#c1a66a99;background:#302a1e99}}
+
+/* Left thumb controls: three equal targets, with a full target-width gap. */
+@media(orientation:landscape){
+ #touch{--move-size:72px;--move-left:max(18px,env(safe-area-inset-left));--move-bottom:calc(max(16px,env(safe-area-inset-bottom)) + 8px)}
+ #touch button[data-key="a"],#touch button[data-key="q"],#touch button[data-key="d"]{width:var(--move-size);min-width:var(--move-size);height:var(--move-size);min-height:var(--move-size);bottom:var(--move-bottom)}
+ #touch button[data-key="a"]{left:var(--move-left)}
+ #touch button[data-key="q"]{left:calc(var(--move-left) + var(--move-size)*2);font-size:10px}
+ #touch button[data-key="d"]{left:calc(var(--move-left) + var(--move-size)*4)}
+ #touch button[data-key="v"]{left:calc(var(--move-left) + var(--move-size)*2.5 - 25px);bottom:calc(var(--move-bottom) + var(--move-size) + 18px)}
+}
+@media(orientation:landscape) and (max-width:600px){#touch{--move-size:64px}}
