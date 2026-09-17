@@ -27,10 +27,10 @@ class SabbathGame{
  constructor(){this.reset()}
  reset(chapter=1,carry={}){
   this.chapter=Number.isInteger(chapter)&&CHAPTERS[chapter]?chapter:1;this.level=CHAPTERS[this.chapter];this.scene=this.level.scene;this.totalKills=carry.totalKills||0;
-  this.viewWidth=this.viewWidth||960;this.cameraHeading=1;this.cameraTurn=0;this.cameraReady=false;this.mode='intro';this.time=carry.time||0;this.kills=0;this.cam=0;this.events=[];this.powerUses=0;this.combo=0;this.comboAge=0;this.shake=0;this.hitstop=0;this.projectiles=[];this.lastDamage=null;this.nextProjectile=0;this.attackTargets=new Set();this.attackBuffer=0;this.jumpBuffer=0;this.stats={hits:0,perfectDodges:0,parries:0,airHits:0,knifeHits:0,damageTaken:0};
+  this.viewWidth=this.viewWidth||960;this.cameraHeading=1;this.cameraTurn=0;this.cameraReady=false;this.mode='intro';this.time=carry.time||0;this.kills=0;this.cam=0;this.events=[];this.powerUses=0;this.combo=0;this.comboAge=0;this.shake=0;this.hitstop=0;this.projectiles=[];this.looseKnives=[];this.lastDamage=null;this.nextProjectile=0;this.attackTargets=new Set();this.attackBuffer=0;this.jumpBuffer=0;this.stats={hits:0,perfectDodges:0,parries:0,airHits:0,knifeHits:0,damageTaken:0};
   this.player={x:130,z:0,vz:0,hp:100,maxHp:100,nav:0,face:1,attack:0,cooldown:0,evade:0,evadeCd:0,evadeKind:'forward',evadeDir:1,evadeSpeed:590,inv:0,hurtTime:0,moving:false,power:0,transform:0,stride:0,landTime:0,counter:0,knives:3,throwCd:0,throwTime:0,throwPending:0,throwFacing:1,airAttack:false,lowAttack:false,crouching:false,attackHit:false};
   const cfg=this.level;this.gates=cfg.gates.map(([x,ids])=>[x,[...ids]]);
-  this.enemies=cfg.types.map((type,i)=>({id:i,type,x:cfg.xs[i],z:0,hp:TYPES[type].hp,maxHp:TYPES[type].hp,heavy:['heavy','captain'].includes(type),bounds:[...cfg.bounds[this.gates.findIndex(g=>g[1].includes(i))]],phase:cfg.buried.includes(i)?'buried':'idle',timer:0,flash:0,face:-1,dead:false,death:0,spawnX:cfg.xs[i],attackNo:0,shotNo:0,staggerGuard:0,broken:0,walk:false,stride:0,hitPlayer:false,lockedFace:-1,move:'thrust'}));
+  this.enemies=cfg.types.map((type,i)=>({id:i,type,x:cfg.xs[i],z:0,hp:TYPES[type].hp,maxHp:TYPES[type].hp,heavy:['heavy','captain'].includes(type),bounds:[...cfg.bounds[this.gates.findIndex(g=>g[1].includes(i))]],phase:cfg.buried.includes(i)?'buried':'idle',timer:0,flash:0,face:-1,dead:false,death:0,spawnX:cfg.xs[i],attackNo:0,shotNo:0,staggerGuard:0,broken:0,walk:false,stride:0,hitPlayer:false,lockedFace:-1,move:'thrust',knives:[]}));
   if(cfg.elite){const elite=this.enemies[cfg.elite[0]];elite.hp=elite.maxHp=cfg.elite[1];elite.elite=true;}
   this.barrels=(cfg.barrels||[]).map((x,id)=>({id,x,height:62,halfWidth:24,radius:132,phase:'idle',timer:0,duration:0,smoke:0}));
   this.exit=cfg.exit;this.markers=new Set();this.hazards=(cfg.embers||[]).map((x,i)=>({x,width:58,phase:'cooldown',timer:1.8+i*.75,hitPlayer:false,hitIds:new Set()}));
@@ -68,7 +68,7 @@ class SabbathGame{
   return items.map(item=>({...item,x:item.u*w})).filter(item=>Math.abs(item.x-p.x)<90*this.houseScale()).sort((a,b)=>Math.abs(a.x-p.x)-Math.abs(b.x-p.x))[0]||null;
  }
  openHouse(){
-  this.scene='house';this.mode='house';this.kills=0;this.enemies=[];this.projectiles=[];this.barrels=[];this.hazards=[];this.hitstop=0;this.shake=0;this.attackBuffer=0;this.jumpBuffer=0;this.inspected=new Set();this.lastDamage=null;
+  this.scene='house';this.mode='house';this.kills=0;this.enemies=[];this.projectiles=[];this.looseKnives=[];this.barrels=[];this.hazards=[];this.hitstop=0;this.shake=0;this.attackBuffer=0;this.jumpBuffer=0;this.inspected=new Set();this.lastDamage=null;
   const p=this.player;for(const key of ['z','vz','attack','cooldown','evade','evadeCd','inv','hurtTime','power','transform','nav','counter','throwCd','throwTime','throwPending','landTime'])p[key]=0;p.crouching=false;p.moving=false;p.face=-1;p.x=this.houseWidth()*.82;this.cam=Math.max(0,this.houseWidth()-this.viewWidth);
   this.emit('house');this.emit('caption','Дверь открыта. В доме никто не ответил.');
  }
@@ -113,14 +113,14 @@ class SabbathGame{
    if(armored&&!breaking){damage*=.3;this.emit('armor',e.x)}
    if(e.phase==='recover'||e.broken>0)damage*=1.25;if(p.counter>0)damage*=1.7;if(p.power>0)damage*=1.5;
    if(armored&&breaking||backBreak){e.broken=1.4;this.emit('break',e.x)}
-   this.attackTargets.add(e.id);this.damageEnemy(e,damage,{stagger:!armored||breaking,finisher:breaking});this.moveEnemy(e,p.attackFacing*(e.heavy?5:finisher?23:10),false);hits++;if(p.airAttack)this.stats.airHits++;
+   this.attackTargets.add(e.id);if(!armored||breaking)this.dislodgeKnives(e,breaking?Infinity:1,Math.sign(p.x-e.x)||-p.attackFacing);this.damageEnemy(e,damage,{stagger:!armored||breaking,finisher:breaking});this.moveEnemy(e,p.attackFacing*(e.heavy?5:finisher?23:10),false);hits++;if(p.airAttack)this.stats.airHits++;
   }
   for(const b of this.barrels)if(b.phase==='idle'&&Math.abs(b.x-p.x)<=reach+b.halfWidth&&(b.x-p.x)*p.attackFacing>=-b.halfWidth&&p.z<=(p.airAttack?68:48))this.armBarrel(b,'sabre');
   if(hits){p.counter=0;this.stats.hits+=hits;this.charge(20*hits);this.hitstop=finisher?.065:.035;this.shake=finisher?3:1.5;this.emit('hit',hits)}
  }
  damageEnemy(e,d,options={}){
   if(e.dead)return;e.hp=Math.max(0,e.hp-d);e.flash=.14;this.emit('sparks',{x:e.x,heavy:e.heavy});
-  if(e.hp<=0){e.dead=true;e.death=1;e.phase='dead';e.waveTotal=0;e.waveIndex=0;this.kills++;if(this.kills%3===0)this.player.knives=Math.min(3,this.player.knives+1);if(this.player.hp>0)this.player.hp=clamp(this.player.hp+2,0,this.player.maxHp);this.emit('kill',e.x)}
+  if(e.hp<=0){this.dislodgeKnives(e,Infinity);e.dead=true;e.death=1;e.phase='dead';e.waveTotal=0;e.waveIndex=0;this.kills++;if(this.kills%3===0)this.player.knives=Math.min(3,this.player.knives+1);if(this.player.hp>0)this.player.hp=clamp(this.player.hp+2,0,this.player.maxHp);this.emit('kill',e.x)}
   else if(options.stagger!==false&&e.phase!=='strike'&&(!e.heavy||options.finisher)&&(e.staggerGuard<=0||options.finisher)){e.phase='hurt';e.volley=0;e.waveTotal=0;e.waveIndex=0;e.timer=options.finisher?.42:.18;e.staggerGuard=1.1}
  }
  dodge(kind='forward'){
@@ -137,7 +137,34 @@ class SabbathGame{
  }
  jump(){const p=this.player;if(this.mode!=='playing')return false;if(p.z===0&&p.vz<=0){p.crouching=false;p.landTime=0;p.vz=450;this.syncAttackStance();this.jumpBuffer=0;this.emit('jump');return true}this.jumpBuffer=.12;return false}
  knife(){const p=this.player;if(this.mode!=='playing'||p.throwCd>0||p.knives<=0||p.evade>0||p.attack>.22)return false;p.knives--;p.throwCd=.65;p.throwTime=.30;p.throwPending=.10;p.throwFacing=p.face;return true}
- releaseKnife(){const p=this.player;this.projectiles.push({id:this.nextProjectile++,kind:'dagger',friendly:true,x:p.x+p.throwFacing*34,z:p.z+(p.crouching?30:83),vx:p.throwFacing*700,vz:30,life:.8,damage:55,dead:false});this.emit('throw',p.x)}
+ releaseKnife(){const p=this.player;this.projectiles.push({id:this.nextProjectile++,kind:'dagger',friendly:true,recoverable:true,x:p.x+p.throwFacing*34,z:p.z+(p.crouching?30:83),vx:p.throwFacing*700,vz:30,life:.8,damage:55,dead:false});this.emit('throw',p.x)}
+ dropKnife(x,z,knife,side=1,vz=65){
+  const floor=6;this.looseKnives.push({id:knife.id,x:clamp(x,40,this.exit+60),z:Math.max(floor,z),vx:side*75,vz,age:0,settled:z<=floor});
+ }
+ dislodgeKnives(e,count=Infinity,side=0){
+  const knives=(e.knives||[]).splice(0,count);
+  for(const [i,k] of knives.entries()){const direction=side||k.side*e.face;this.dropKnife(e.x+direction*18,k.z,k,direction,55+i*15);}
+  if(knives.length)this.emit('knifeLoose',{x:e.x,count:knives.length});
+ }
+ recoverProjectile(s,x,z,side=Math.sign(s.vx),vz=35){
+  if(!s.recoverable||s.recovered)return;s.recovered=true;this.dropKnife(x,z,s,side,vz);
+ }
+ tickKnives(dt,beforeX=this.player.x,beforeZ=this.player.z){
+  if(dt<=0||this.mode!=='playing'||this.player.hp<=0)return;
+  const p=this.player;let picked=0;
+  for(const k of this.looseKnives){
+   k.age+=dt;
+   if(!k.settled){
+    const nextZ=k.z+k.vz*dt-190*dt*dt;
+    const step=nextZ<6?dt*(k.z-6)/(k.z-nextZ):dt;
+    k.x=clamp(k.x+k.vx*step,40,this.exit+60);k.z=Math.max(6,nextZ);k.vz-=380*dt;
+    if(nextZ<=6){k.settled=true;k.vx=0;k.vz=0;}continue;
+   }
+   if(p.knives<3&&k.age>=.12&&segmentEntry(beforeX,beforeZ,p.x,p.z,k.x-28,k.x+28,0,24)!==null){k.picked=true;p.knives++;picked++;}
+  }
+  this.looseKnives=this.looseKnives.filter(k=>!k.picked);
+  if(picked)this.emit('knifePickup',{x:p.x,count:picked});
+ }
  cancelThrow(){const p=this.player;if(p.throwPending>0)p.knives=Math.min(3,p.knives+1);p.throwPending=0;p.throwTime=0}
 
  power(){const p=this.player;if(this.mode!=='playing'||p.nav<100||p.power>0)return false;p.nav=0;p.power=8;p.transform=.65;p.maxHp=Math.max(60,p.maxHp-8);p.hp=Math.min(p.hp,p.maxHp);this.powerUses++;this.shake=2;this.emit('power');this.emit('caption','Навь в крови. Не останавливайся.');return true}
@@ -264,7 +291,7 @@ class SabbathGame{
  }
  tickProjectiles(dt){
   if(dt<=0)return;
-  const p=this.player;for(const s of this.projectiles){if(s.dead)continue;const step=Math.min(dt,Math.max(0,s.life));if(step===0||s.kind==='dagger'&&s.z<6){s.dead=true;continue;}const old=s.x,oldZ=s.z;s.x+=s.vx*step;s.life-=dt;if(s.kind==='dagger'){s.z+=s.vz*step-190*step*step;s.vz-=380*step;}
+  const p=this.player;for(const s of this.projectiles){if(s.dead)continue;const step=Math.min(dt,Math.max(0,s.life));if(step===0||s.kind==='dagger'&&s.z<6){s.dead=true;if(s.kind==='dagger')this.recoverProjectile(s,s.x,s.z,Math.sign(s.vx),Math.min(s.vz||0,0));continue;}const old=s.x,oldZ=s.z;s.x+=s.vx*step;s.life-=dt;if(s.kind==='dagger'){s.z+=s.vz*step-190*step*step;s.vz-=380*step;}
    const targets=[];
    const add=(kind,target,radius,bottom,top)=>{const t=segmentEntry(old,oldZ,s.x,s.z,target.x-radius,target.x+radius,Math.max(bottom,s.kind==='dagger'?6:-Infinity),top);if(t!==null)targets.push({kind,target,t});};
    if(s.friendly){for(const e of this.enemies)if(!e.dead&&e.phase!=='buried'&&!(e.phase==='emerge'&&e.timer>.65))add('enemy',e,20,0,e.heavy?160:e.type==='crawler'?82:140);}
@@ -272,8 +299,18 @@ class SabbathGame{
    else{const center=p.z+(p.crouching?26:52),half=p.crouching?26:39;add('player',p,19,center-half,center+half);}
    if(s.kind!=='wave')for(const b of this.barrels)if(b.phase==='idle'||b.phase==='fuse')add('barrel',b,b.halfWidth,0,b.height);
    targets.sort((a,b)=>a.t-b.t||Number(a.kind!=='barrel')-Number(b.kind!=='barrel'));const hit=targets[0];
-   if(hit){s.dead=true;if(hit.kind==='barrel')this.armBarrel(hit.target,'shot');else if(hit.kind==='player')this.hurt(s.damage,{kind:s.kind,direction:s.vx,low:s.z<70,z:oldZ+(s.z-oldZ)*hit.t});else{if(s.kind==='dagger')this.stats.knifeHits++;this.damageEnemy(hit.target,s.damage,{stagger:true});this.emit('reflectedHit',hit.target.x);}}
-   if(s.life<=0||s.kind==='dagger'&&s.z<6)s.dead=true;
+   if(hit){
+    if(s.kind==='dagger'&&s.recoverable&&!s.recovered){
+     const x=old+(s.x-old)*hit.t,z=oldZ+(s.z-oldZ)*hit.t;
+     if(hit.kind==='enemy'){
+      const e=hit.target;s.recovered=true;(e.knives||(e.knives=[])).push({id:s.id,side:-Math.sign(s.vx)*e.face,z:e.type==='crawler'?34:e.type==='spitter'?60:e.heavy?83:72});
+      if(e.hp>s.damage&&!this.markers.has('knife-recovery')){this.markers.add('knife-recovery');this.emit('caption','КОРТИК ЗАСТРЯЛ. Удар саблей выбьет клинок. Подбери его с земли.');}
+     }else this.recoverProjectile(s,x,z,-Math.sign(s.vx));
+    }
+    s.dead=true;if(hit.kind==='barrel')this.armBarrel(hit.target,'shot');else if(hit.kind==='player')this.hurt(s.damage,{kind:s.kind,direction:s.vx,low:s.z<70,z:oldZ+(s.z-oldZ)*hit.t});else{if(s.kind==='dagger')this.stats.knifeHits++;this.damageEnemy(hit.target,s.damage,{stagger:true});this.emit('reflectedHit',hit.target.x);}}
+   if(s.life<=0||s.kind==='dagger'&&s.z<6){
+    if(s.kind==='dagger'&&!s.dead){const t=s.z<6?clamp((oldZ-6)/(oldZ-s.z),0,1):1;this.recoverProjectile(s,old+(s.x-old)*t,oldZ+(s.z-oldZ)*t,Math.sign(s.vx),Math.min(s.vz,0));}s.dead=true;
+   }
   }this.projectiles=this.projectiles.filter(s=>!s.dead);
  }
  tickEnemy(e,dt){
@@ -315,7 +352,7 @@ class SabbathGame{
   this.shake=Math.max(0,this.shake-dt*15);for(const k of ['attack','cooldown','evade','evadeCd','inv','hurtTime','power','counter','throwCd','throwTime','landTime'])p[k]=Math.max(0,p[k]-dt);
   if(p.throwPending>0){p.throwPending=Math.max(0,p.throwPending-dt);if(p.throwPending===0)this.releaseKnife();}
   if(p.attack>.08&&p.attack<=.22)this.resolveAttack();
-  const axis=(input.right?1:0)-(input.left?1:0),beforeX=p.x;p.moving=!!axis&&p.attack<.12;
+  const axis=(input.right?1:0)-(input.left?1:0),beforeX=p.x,beforeZ=p.z;p.moving=!!axis&&p.attack<.12;
   if(axis&&p.evade<=0&&p.attack<=0&&p.throwTime===0)p.face=axis;
   if(p.evade>0){p.x+=p.evadeDir*p.evadeSpeed*dt;if(p.evadeKind==='back'){for(const e of this.enemies){if(e.dead||e.phase==='buried'||e.phase==='emerge')continue;const side=Math.sign(e.x-beforeX),radius=e.heavy?42:28;if(side===p.evadeDir&&(e.x-p.x)*side<radius&&Math.abs(e.x-beforeX)<radius+p.evadeSpeed*dt+1)p.x=e.x-side*radius;}}}else if(p.moving)p.x+=axis*(p.crouching?62:p.power>0?190:158)*dt;
   if(axis&&p.evade===0&&p.z<35){for(const e of this.enemies){if(e.dead||e.phase==='strike'||e.phase==='buried'||e.phase==='emerge')continue;const side=Math.sign(e.x-beforeX),radius=e.heavy?42:28;if(side===axis&&(e.x-p.x)*side<radius&&Math.abs(e.x-beforeX)<radius+20)p.x=e.x-side*radius;}}
@@ -326,6 +363,7 @@ class SabbathGame{
   this.tickHazards(dt);this.tickBarrels(dt);
   this.tickProjectiles(dt);
   for(const [gate,ids] of this.gates)if(p.x>gate&&ids.some(i=>this.enemies.some(e=>e.id===i&&!e.dead))){p.x=gate;if(!this.markers.has('gate'+gate)){this.markers.add('gate'+gate);this.emit('toast','ТЕНИ НЕ ВЫПУСКАЮТ. ОЧИСТИ ПУТЬ.')}}
+  this.tickKnives(dt,beforeX,beforeZ);
   const travelled=Math.abs(p.x-beforeX);p.moving=p.moving&&travelled>.01;if(p.moving&&p.hurtTime>0&&this.lastDamage)this.lastDamage.poseUntil=Math.min(this.lastDamage.poseUntil,.18-p.hurtTime+.09);if(p.moving&&p.z===0&&p.vz===0&&p.evade===0)p.stride+=travelled;
   this.tickCamera(dt);
   for(const [x,msg] of this.level.captions)if(p.x>x&&!this.markers.has(x)){this.markers.add(x);this.emit('caption',msg)}
