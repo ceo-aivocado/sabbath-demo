@@ -136,7 +136,7 @@ body.phone-portrait #rotate-hint p{font:16px/1.5 Arial;max-width:270px;color:#dc
 @media(orientation:landscape){body:not(.desktop):not([data-scene="house"]) #toast{top:calc(clamp(80px,21vh,90px) + 40px);left:19%;width:62%;font:10px/1.3 Arial,sans-serif;letter-spacing:.5px}}
 </style></head>
 <body><script>
-window.SABBATH_BUILD={release:"v28"};
+window.SABBATH_BUILD={release:"v29"};
 if(location.pathname.endsWith('/desktop.html')){
  document.body.classList.add('desktop');document.title='Sabbath Desktop';
  document.querySelector('link[rel="manifest"]').setAttribute('href','desktop.webmanifest');
@@ -251,7 +251,7 @@ class SabbathGame{
    if(armored&&!breaking){damage*=.3;this.emit('armor',e.x)}
    if(e.phase==='recover'||e.broken>0)damage*=1.25;if(p.counter>0)damage*=1.7;if(p.power>0)damage*=1.5;
    if(armored&&breaking||backBreak){e.broken=1.4;this.emit('break',e.x)}
-   this.attackTargets.add(e.id);this.damageEnemy(e,damage,{stagger:!armored||breaking,finisher:breaking});e.x+=p.attackFacing*(e.heavy?5:finisher?23:10);hits++;if(p.airAttack)this.stats.airHits++;
+   this.attackTargets.add(e.id);this.damageEnemy(e,damage,{stagger:!armored||breaking,finisher:breaking});this.moveEnemy(e,p.attackFacing*(e.heavy?5:finisher?23:10),false);hits++;if(p.airAttack)this.stats.airHits++;
   }
   for(const b of this.barrels)if(b.phase==='idle'&&Math.abs(b.x-p.x)<=reach+b.halfWidth&&(b.x-p.x)*p.attackFacing>=-b.halfWidth&&p.z<=(p.airAttack?68:48))this.armBarrel(b,'sabre');
   if(hits){p.counter=0;this.stats.hits+=hits;this.charge(20*hits);this.hitstop=finisher?.065:.035;this.shake=finisher?3:1.5;this.emit('hit',hits)}
@@ -312,6 +312,31 @@ class SabbathGame{
   e.timer=(captain?(e.move==='slam'?1.1:e.move==='wave'?1.05:.85):.85)*(e.enraged?.88:1);e.windupDuration=e.timer;this.emit('warning',{x:e.x,type:e.type,move:e.move,low:!!e.shotLow,enraged:!!e.enraged});
   if(!this.markers.has(e.type)){this.markers.add(e.type);this.emit('caption',captain?'СОТНИК: укол — вниз; волна — прыжок; замах сверху — рывок за спину.':'КОПЕЙЩИК: под высоким уколом присядь. Низкий подсек — перепрыгни.');}
  }
+ bodyRadius(e){return e.heavy?80:e.type==='crawler'?48:e.type==='gunner'?42:40;}
+ enemyBody(e){return !e.dead&&!['buried','emerge'].includes(e.phase)&&!(e.phase==='strike'&&(e.type==='crawler'||['lancer','captain'].includes(e.type)&&e.move==='thrust'));}
+ moveEnemy(e,delta,walking=true){
+  const before=e.x,dir=Math.sign(delta);let next=clamp(before+delta,...e.bounds);
+  // A voluntary step (or blade recoil) moves this body only. Committed attacks
+  // and recovery poses are never passively pushed by somebody else's feet.
+  const block=(x,gap,side)=>{if(side!==dir)return;const limit=x-dir*gap;
+   next=dir>0?Math.min(next,Math.max(before,limit)):Math.max(next,Math.min(before,limit));};
+  if(dir){
+   for(const other of this.enemies)if(other!==e&&this.enemyBody(other))block(other.x,this.bodyRadius(e)+this.bodyRadius(other),Math.sign(other.x-before)||(other.id>e.id?1:-1));
+   const p=this.player;if(p.z<35&&p.evade<=0)block(p.x,e.heavy?42:28,Math.sign(p.x-before)||-e.face);
+  }
+  e.x=clamp(next,...e.bounds);if(walking)e.walk=Math.abs(e.x-before)>.001;return e.x-before;
+ }
+ yieldEnemy(e,dt){
+  let penetration=.25,direction=0;
+  for(const other of this.enemies)if(other!==e&&this.enemyBody(other)){
+   const depth=this.bodyRadius(e)+this.bodyRadius(other)-Math.abs(other.x-e.x);
+   if(depth>penetration){penetration=depth;direction=-(Math.sign(other.x-e.x)||(other.id>e.id?1:-1));}
+  }
+  const p=this.player,depth=(e.heavy?42:28)-Math.abs(p.x-e.x);
+  if(p.z<35&&p.evade<=0&&depth>penetration){penetration=depth;direction=Math.sign(e.x-p.x)||-e.face;}
+  if(!direction)return false;
+  this.moveEnemy(e,direction*Math.min(penetration+.5,TYPES[e.type].speed*.8*dt));return true;
+ }
  tickGuard(e,dt){
   const p=this.player,cfg=TYPES[e.type],captain=e.type==='captain';e.flash=Math.max(0,e.flash-dt);e.broken=Math.max(0,e.broken-dt);e.staggerGuard=Math.max(0,e.staggerGuard-dt);e.walk=false;
   if(e.dead){e.death=Math.max(0,e.death-dt*.8);e.waveTotal=0;e.waveIndex=0;return;}
@@ -335,8 +360,9 @@ class SabbathGame{
   }
   if(e.phase==='recover'){if(e.timer<=0)e.phase='idle';else return;}
   const distance=Math.abs(p.x-e.x);if(e.phase!=='idle'||distance>470)return;e.face=e.x>p.x?-1:1;
+  if(this.yieldEnemy(e,dt))return;
   const onScreen=e.x>=this.cam+24&&e.x<=this.cam+this.viewWidth-24;
-  if(distance>cfg.reach-14||!onScreen){e.x+=e.face*cfg.speed*dt;e.walk=true;}else if(this.enemies.filter(n=>!n.dead&&['windup','strike'].includes(n.phase)).length<2)this.beginGuard(e);
+  if(distance>cfg.reach-14||!onScreen){this.moveEnemy(e,e.face*cfg.speed*dt);}else if(this.enemies.filter(n=>!n.dead&&['windup','strike'].includes(n.phase)).length<2)this.beginGuard(e);
  }
  tickHazards(dt){
   const p=this.player;for(const h of this.hazards){const visible=h.x>=this.cam-60&&h.x<=this.cam+this.viewWidth+60&&Math.abs(h.x-p.x)<420;
@@ -406,11 +432,12 @@ class SabbathGame{
   }
   if(e.phase==='recover'){if(e.timer<=0)e.phase='idle';else return}
   if(e.phase!=='idle'||dist>470)return;
+  if(this.yieldEnemy(e,dt))return;
   const onScreen=e.x>=this.cam+24&&e.x<=this.cam+this.viewWidth-24;
   const active=this.enemies.filter(n=>!n.dead&&(n.phase==='windup'||n.phase==='strike')).length;
   if(e.type==='gunner'&&dist<BUTT.trigger&&onScreen){if(active<2)this.beginEnemy(e);return;}
-  if(['spitter','gunner'].includes(e.type)&&dist<180&&onScreen){const retreat=clamp(e.x-e.face*cfg.speed*.8*dt,...e.bounds);if(Math.abs(retreat-e.x)>.001){e.x=retreat;e.walk=true;return;}}
-  if(dist>cfg.reach-14||!onScreen){e.x+=e.face*cfg.speed*dt;e.walk=true}else if(active<2)this.beginEnemy(e);
+  if(['spitter','gunner'].includes(e.type)&&dist<180&&onScreen&&Math.abs(this.moveEnemy(e,-e.face*cfg.speed*.8*dt))>.001)return;
+  if(dist>cfg.reach-14||!onScreen){this.moveEnemy(e,e.face*cfg.speed*dt)}else if(active<2)this.beginEnemy(e);
  }
  tick(dt,input={}){
   dt=clamp(dt,0,.05);if(this.mode==='house'){this.tickHouse(dt,input);return;}if(this.mode!=='playing')return;const p=this.player;
@@ -429,8 +456,6 @@ class SabbathGame{
   if(input.attack||(this.attackBuffer>0&&p.cooldown===0))this.attack();this.attackBuffer=Math.max(0,this.attackBuffer-dt);
   for(const e of this.enemies){const before=e.x;this.tickEnemy(e,dt);if(!e.dead){e.x=clamp(e.x,...e.bounds);}if(e.walk){const distance=Math.abs(e.x-before);e.stride=(e.stride||0)+distance;e.walk=distance>.001;}}
   this.tickHazards(dt);this.tickBarrels(dt);
-  // Keep silhouettes separate, except during a committed lunge.
-  for(let i=0;i<this.enemies.length;i++)for(let j=i+1;j<this.enemies.length;j++){const a=this.enemies[i],b=this.enemies[j];if(a.dead||b.dead||['strike','buried','emerge'].includes(a.phase)||['strike','buried','emerge'].includes(b.phase))continue;const d=b.x-a.x;if(Math.abs(d)<38){const push=(38-Math.abs(d))*dt*3,sign=d<0?-1:1;a.x-=push*sign;b.x+=push*sign}}
   this.tickProjectiles(dt);
   for(const [gate,ids] of this.gates)if(p.x>gate&&ids.some(i=>this.enemies.some(e=>e.id===i&&!e.dead))){p.x=gate;if(!this.markers.has('gate'+gate)){this.markers.add('gate'+gate);this.emit('toast','ТЕНИ НЕ ВЫПУСКАЮТ. ОЧИСТИ ПУТЬ.')}}
   const travelled=Math.abs(p.x-beforeX);p.moving=p.moving&&travelled>.01;if(p.moving&&p.hurtTime>0&&this.lastDamage)this.lastDamage.poseUntil=Math.min(this.lastDamage.poseUntil,.18-p.hurtTime+.09);if(p.moving&&p.z===0&&p.vz===0&&p.evade===0)p.stride+=travelled;
