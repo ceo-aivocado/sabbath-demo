@@ -339,7 +339,7 @@ function gunner(e){
 function renderShots(){for(const shot of game.projectiles){const x=shot.x-game.cam;if(x<-100||x>W+100)continue;
  if(shot.kind==='dagger'){ctx.save();ctx.translate(x,G-shot.z);ctx.rotate(Math.atan2(-shot.vz,shot.vx));rect(-14,-1,22,2,'#d9dee0');path([[8,-3],[17,0],[8,3]],'#edf0e5');rect(-13,-4,2,8,'#c19b56');rect(-21,-2,8,4,'#735138');ctx.restore();}
  else if(shot.kind==='lead'){const y=G-shot.z;rect(x-9*Math.sign(shot.vx),y-1,13,2,'#f4d7a1');glow(x,y,9,'#e9a45255');}
- else if(shot.kind==='wave'){ctx.strokeStyle='#dda96e';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-18,G);ctx.lineTo(x-8,G-12);ctx.lineTo(x,G-25);ctx.lineTo(x+6,G-7);ctx.lineTo(x+16,G);ctx.stroke();glow(x,G-5,26,'#d59c593a')}
+ else if(shot.kind==='wave'){SabbathWaves.draw(ctx,shot,game.scene,game.cam,G);}
  else{for(let i=4;i>=0;i--)glow(x-i*Math.sign(shot.vx)*9,G-shot.z,11-i,shot.friendly?'#e8c67f55':'#ac83d944');rect(x-4,G-shot.z-4,8,8,shot.friendly?'#e9c681':'#bda0e5');rect(x-1,G-shot.z-2,3,3,'#f1dfff')}
 }}
 // One continuous painting: no tiles, mirrored copies, or screen-space seams.
