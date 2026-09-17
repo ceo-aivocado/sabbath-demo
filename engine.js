@@ -93,12 +93,12 @@ class SabbathGame{
 
  hurt(d){const p=this.player;if(p.inv>0||this.mode!=='playing')return false;p.hp=Math.max(0,p.hp-d);p.inv=.62;p.attack=0;this.cancelThrow();this.attackBuffer=0;this.shake=4;this.combo=0;this.stats.damageTaken+=d;this.emit('hurt');if(p.hp===0){this.mode='dead';this.emit('dead')}return true}
  spawnShot(e,kind,direction){if(kind==='lead'){this.projectiles.push({id:this.nextProjectile++,kind,x:e.x+direction*85,z:e.shotLow?48:88,vx:direction*510,life:1.25,damage:22,dead:false});this.emit('gunshot',{x:e.x+direction*85,z:e.shotLow?48:88,face:direction});return;}this.projectiles.push({id:this.nextProjectile++,kind,x:e.x+direction*30,z:kind==='wave'?8:82,vx:direction*(kind==='wave'?240:210),life:kind==='wave'?1.15:2.8,damage:kind==='wave'?25:18,dead:false});}
- beginEnemy(e){if(['lancer','captain'].includes(e.type)){this.beginGuard(e);return;}const cfg=TYPES[e.type];e.phase='windup';e.timer=cfg.windup*(e.enraged?.75:1);e.lockedFace=e.face;e.attackNo++;e.shotLow=e.type==='gunner'&&e.attackNo%2===0;e.walk=false;e.hitPlayer=false;this.emit('warning',{x:e.x,type:e.type});
+ beginEnemy(e){if(['lancer','captain'].includes(e.type)){this.beginGuard(e);return;}const cfg=TYPES[e.type];e.phase='windup';e.timer=cfg.windup*(e.enraged?.75:1);e.lockedFace=e.face;e.attackNo++;e.shotLow=e.type==='gunner'&&e.attackNo%2===0;e.walk=false;e.hitPlayer=false;this.emit('warning',{x:e.x,type:e.type,move:e.move,low:!!e.shotLow,enraged:!!e.enraged});
   if(!this.markers.has(e.type)){this.markers.add(e.type);const tips={gunner:'СТРЕЛОК: высокий выстрел — присядь; низкий — прыгни. Кортик сбивает прицел.',cutter:'Вспышка перед ударом. Рывок в последний момент усиливает ответ.',crawler:'ПОЛЗУН: низкий бросок. Перепрыгни и ударь сверху.',spitter:'ПЛЕВУН: присядь под сгустком или отбей его саблей.',heavy:'УТОПЛЕННИК: перепрыгни волну. После удара он уязвим.'};this.emit('caption',tips[e.type])}
  }
  beginGuard(e){
   const captain=e.type==='captain';e.move=captain?(e.enraged?['wave','thrust','slam','wave']:['thrust','slam','wave'])[e.attackNo%(e.enraged?4:3)]:(e.attackNo%2?'sweep':'thrust');e.attackNo++;e.lockedFace=e.face;e.phase='windup';e.hitPlayer=false;e.walk=false;
-  e.timer=(captain?(e.move==='slam'?1.1:e.move==='wave'?1.05:.85):.85)*(e.enraged?.88:1);this.emit('warning',{x:e.x,type:e.type});
+  e.timer=(captain?(e.move==='slam'?1.1:e.move==='wave'?1.05:.85):.85)*(e.enraged?.88:1);this.emit('warning',{x:e.x,type:e.type,move:e.move,low:!!e.shotLow,enraged:!!e.enraged});
   if(!this.markers.has(e.type)){this.markers.add(e.type);this.emit('caption',captain?'СОТНИК: укол — вниз; волна — прыжок; замах сверху — рывок за спину.':'КОПЕЙЩИК: под высоким уколом присядь. Низкий подсек — перепрыгни.');}
  }
  tickGuard(e,dt){
