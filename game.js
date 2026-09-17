@@ -10,7 +10,7 @@ function saveCheckpoint(){savedCheckpoint=game.checkpoint();try{localStorage.set
 let last=0,clock=0,captionUntil=0,toastUntil=0,soundOn=true,audio=null,soundscape=null,audioSleep=null,footstep=0,footstepCrouched=false,ready=false;
 try{soundOn=localStorage.getItem('sabbath-sound')!=='off'}catch{}
 // All imagery is local; this game makes no network requests except loading its own files.
-const assets={hit:'assets/yaromir-hit.png',gunnerMelee:'assets/gunner-melee.png',dodge:'assets/yaromir-dodge.png',demonDodge:'assets/yaromir-demon-dodge.png',enemyWalk:'assets/enemies-walk.png',enemyCombat:'assets/enemies-combat.png',crouchWalk:'assets/yaromir-crouch-walk.png',air:'assets/yaromir-air.png',guardWalk:'assets/guards-walk.png',guardReady:'assets/guards-ready.png',villages:'assets/villages-panorama.png',skit:'assets/skit-panorama.png',fortress:'assets/fortress-panorama.png',guards:'assets/guards-atlas-v2.png',house:'assets/house-interior.png',sich:'assets/sich-panorama.png',gunner:'assets/gunner-atlas.png',throw:'assets/yaromir-throw.png',crouch:'assets/yaromir-crouch.png',demonWalk:'assets/yaromir-demon-walk.png',walk:'assets/yaromir-walk.png',hero:'assets/yaromir-atlas.png',demon:'assets/yaromir-demon-atlas.png',special:'assets/enemies-special.png',powder:'assets/powder-barrel.png',bg:'assets/background-panorama.png',props:'assets/props-atlas.png'};
+const assets={hit:'assets/yaromir-hit.png',gunnerMelee:'assets/gunner-melee.png',dodge:'assets/yaromir-dodge.png',demonDodge:'assets/yaromir-demon-dodge.png',enemyWalk:'assets/enemies-walk.png',enemyCombat:'assets/enemies-combat.png',crouchWalk:'assets/yaromir-crouch-walk.png',air:'assets/yaromir-air.png',guardWalk:'assets/guards-walk.png',guardReady:'assets/guards-ready.png',villages:'assets/villages-panorama.png',skit:'assets/skit-panorama.png',fortress:'assets/fortress-panorama.png',guards:'assets/guards-atlas-v2.png',house:'assets/house-interior.png',sich:'assets/sich-panorama.png',gunner:'assets/gunner-atlas.png',throw:'assets/yaromir-throw.png',crouch:'assets/yaromir-crouch.png',demonWalk:'assets/yaromir-demon-walk.png',walk:'assets/yaromir-walk.png',hero:'assets/yaromir-atlas.png',demon:'assets/yaromir-demon-atlas.png',special:'assets/enemies-special-v2.png',powder:'assets/powder-barrel.png',bg:'assets/background-panorama.png',props:'assets/props-atlas.png'};
 // The web builder fills this with immutable URLs, byte counts and SHA-256 hashes.
 // Standalone/file builds keep native Image loading and need no Fetch/CacheStorage.
 const assetInfo={};
@@ -309,24 +309,45 @@ function heavySignal(e){
  if(e.dead||e.type!=='heavy'||e.phase!=='windup')return null;
  return {waves:Math.max(1,(e.waveTotal||1)-(e.waveIndex||0)),progress:clamp(1-e.timer/(e.windupDuration||.95),0,1),followup:(e.waveIndex||0)>0};
 }
+// The crawler coils low; the spitter gathers force in its throat. Pose timing
+// comes from the attack itself, while walking advances only with real travel.
+const specialFrames=[[[0,80,318,230,174,212],[318,80,303,230,162,212],[621,80,315,230,171,212],[936,80,318,230,171,209]],[[20,318,290,252,135,230],[310,318,245,252,115,230],[555,318,432,252,200,232],[987,318,267,252,133,230]],[[30,570,313,342,145,334],[343,570,307,342,147,334],[650,570,324,342,167,335],[974,570,280,342,146,336]],[[40,912,310,342,153,316],[350,912,300,342,140,318],[650,912,331,342,169,319],[981,912,273,342,162,318]]];
+function specialFrame(e){
+ if(!['crawler','spitter'].includes(e.type)||!art.special)return null;
+ const row=e.type==='spitter'?2:0,scale=e.type==='crawler'?.42:.40;
+ if(!e.dead&&e.phase==='idle'&&e.walk){const i=Math.floor((e.stride||0)/14)%4;return {img:art.special,f:specialFrames[row][i],scale,pose:'walk-'+i};}
+ const early=e.phase==='windup'&&e.timer>(e.windupDuration||(row?.85:.70))*.48;
+ const active=!e.dead&&['windup','strike','recover','hurt'].includes(e.phase);
+ const i=e.dead||e.phase==='recover'||e.phase==='hurt'?3:e.phase==='windup'?(early?0:1):e.phase==='strike'?2:0;
+ return {img:art.special,f:specialFrames[row+(active||e.dead?1:0)][i],scale,pose:e.dead?'dead':e.phase==='windup'?(early?'windup-early':'windup-late'):e.phase};
+}
+function specialSignal(e){
+ if(e.dead||!['crawler','spitter'].includes(e.type)||e.phase!=='windup')return null;
+ const progress=clamp(1-e.timer/(e.windupDuration||(e.type==='crawler'?.70:.85)),0,1);
+ return {progress,face:e.lockedFace,z:e.type==='crawler'?3:82,throat:progress<.52?{x:21,z:92}:{x:23,z:95}};
+}
 function enemy(e){
  if(['lancer','captain'].includes(e.type)){guard(e);return;}
  if(e.type==='gunner'){gunner(e);return;}
  if(!art.special)return;const x=e.x-game.cam,y=G+(e.dead?(1-e.death)*16:0);if(x<-180||x>W+180||e.dead&&e.death<=0)return;
  if(e.phase==='buried'||e.phase==='emerge'){const rising=e.phase==='emerge',progress=rising?clamp(1-e.timer/1.1,0,1):0;ctx.save();ctx.strokeStyle=rising?'#9b8b6677':'#56717a33';ctx.lineWidth=1;for(let i=0;i<3;i++){ctx.beginPath();ctx.ellipse(x,G+3,14+i*10+(clock*12%12),3+i*2,0,0,Math.PI*2);ctx.stroke()}ctx.restore();if(!rising)return;ctx.save();ctx.beginPath();ctx.rect(x-150,0,300,G+5);ctx.clip();ctx.translate(0,(1-progress)*(e.heavy?165:105));}
 
- const crouch=e.type==='crawler',spitter=e.type==='spitter',windup=e.phase==='windup';
- const col=e.dead?3:windup?2:e.phase==='strike'?3:e.walk?Math.floor((e.stride||0)/14)%2:0,special=(crouch||spitter)&&art.special,sprite=art.special,row=spitter?1:0,sw=sprite.width/4,sh=sprite.height/2,scale=e.heavy?.36:crouch?.31:.31;
+ const crouch=e.type==='crawler',spitter=e.type==='spitter',windup=!e.dead&&e.phase==='windup';
  ctx.save();ctx.globalAlpha=e.dead?e.death*.3:.3;ctx.fillStyle='#03080c';ctx.beginPath();ctx.ellipse(x,G+3,e.heavy?37:26,7,0,0,7);ctx.fill();ctx.restore();
  if(windup){const color=e.heavy?'#e4b164':crouch?'#e6a255':spitter?'#b08edc':'#e3796a';ctx.save();ctx.globalAlpha=.35+.2*Math.sin(clock*18);ctx.fillStyle=color;const range=e.heavy?210:crouch?190:76;if(spitter){ctx.strokeStyle=color;ctx.setLineDash([5,7]);ctx.beginPath();ctx.moveTo(x,G-82);ctx.lineTo(x+e.lockedFace*200,G-82);ctx.stroke()}else ctx.fillRect(e.heavy?x-range:x+(e.lockedFace<0?-range:0),G-3,e.heavy?range*2:range,3);if(e.heavy){const signal=heavySignal(e);ctx.globalAlpha=.9;ctx.fillStyle='#f0d39b';ctx.fillRect(x-range*signal.progress,G-3,range*signal.progress*2,3);for(let i=0;i<signal.waves;i++)rect(x+(i-(signal.waves-1)/2)*12-3,G-194,6,5,'#f0d39b');}ctx.restore();}
  ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.scale(-e.face,1);ctx.globalAlpha=e.dead?e.death*e.death:1;if(e.dead)ctx.rotate((1-e.death)*.75);
  if(e.flash>0)ctx.filter='brightness(2) saturate(.4)';else if(e.enraged){ctx.filter='sepia(.25) saturate(1.4)';ctx.shadowColor='#d97e54';ctx.shadowBlur=5;}
  if(windup){ctx.shadowColor=e.heavy?'#d9ab67':spitter?'#bc85dc':'#ee7952';ctx.shadowBlur=10;}
- const grounded=drownedFrame(e);if(grounded){const {img,f,scale}=grounded;ctx.drawImage(img,...f.slice(0,4),-f[4]*scale,-f[5]*scale,f[2]*scale,f[3]*scale);}else{const wide=crouch&&col===3,sourceX=wide?sprite.width*(1240/1774):col*sw,sourceW=wide?sprite.width*(534/1774):sw,anchor=wide?300:220;ctx.drawImage(sprite,sourceX,row*sh,sourceW,sh,-anchor*scale,-(row?415:402)*scale,sourceW*scale,sh*scale);}ctx.restore();
- if(spitter&&!e.dead&&!special){glow(x-e.face*5,G-88,14,windup?'#c198fb88':'#aa8bbc33');rect(x-e.face*5,G-91,4,4,'#c4a1dd')}
+ const grounded=drownedFrame(e)||specialFrame(e);if(grounded){const {img,f,scale}=grounded;ctx.drawImage(img,...f.slice(0,4),-f[4]*scale,-f[5]*scale,f[2]*scale,f[3]*scale);}ctx.restore();
+ const signal=specialSignal(e);
+ if(spitter&&signal){
+  const throat=x+signal.face*signal.throat.x,yy=G-signal.throat.z,charge=signal.progress;
+  glow(throat,yy,7+charge*13,'#a983d3'+Math.round(18+charge*46).toString(16).padStart(2,'0'));
+  for(let i=0;i<3;i++){const angle=i*Math.PI*2/3+charge*2,r=12*(1-charge)+3;rect(throat+Math.cos(angle)*r,yy+Math.sin(angle)*r,2,2,'#c3a5e28c');}
+ }
  if(e.phase==='emerge')ctx.restore();
  if(e.broken>0){ctx.strokeStyle='#e8dba0';ctx.beginPath();ctx.moveTo(x-15,G-155);ctx.lineTo(x-3,G-148);ctx.lineTo(x+2,G-163);ctx.lineTo(x+15,G-155);ctx.stroke()}
- if(!e.dead&&e.phase!=='emerge'&&Math.abs(e.x-game.player.x)<340){const top=G-(e.heavy?166:crouch?103:144);rect(x-23,top,46,3,'#080c11');rect(x-23,top,46*e.hp/e.maxHp,3,e.heavy?'#c3a36c':spitter?'#a88bbd':'#b78b68');if(windup){ctx.fillStyle=e.heavy?'#e1bf7a':'#efb878';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText(crouch||e.heavy?'↑':spitter?'◆':'!',x,top-7)}}
+ if(!e.dead&&e.phase!=='emerge'&&Math.abs(e.x-game.player.x)<340){const top=G-(e.heavy?166:crouch?103:144);rect(x-23,top,46,3,'#080c11');rect(x-23,top,46*e.hp/e.maxHp,3,e.heavy?'#c3a36c':spitter?'#a88bbd':'#b78b68');if(windup){ctx.fillStyle=e.heavy?'#e1bf7a':'#efb878';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText(crouch||e.heavy?'↑':spitter?'↓':'!',x,top-7)}}
 }
 // Keep locomotion separate from attack anticipation; every pose has its own foot anchor.
 function guardFrame(e){
