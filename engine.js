@@ -98,11 +98,16 @@ class SabbathGame{
  damageEnemy(e,d,options={}){
   if(e.dead)return;e.hp=Math.max(0,e.hp-d);e.flash=.14;this.emit('sparks',{x:e.x,heavy:e.heavy});
   if(e.hp<=0){e.dead=true;e.death=1;e.phase='dead';this.kills++;if(this.kills%3===0)this.player.knives=Math.min(3,this.player.knives+1);if(this.player.hp>0)this.player.hp=clamp(this.player.hp+2,0,this.player.maxHp);this.emit('kill',e.x)}
-  else if(options.stagger!==false&&e.phase!=='strike'&&(!e.heavy||options.finisher)&&(e.staggerGuard<=0||options.finisher)){e.phase='hurt';e.volley=0;e.waveEcho=0;e.timer=options.finisher?.42:.18;e.staggerGuard=1.1}
+  else if(options.stagger!==false&&e.phase!=='strike'&&(!e.heavy||options.finisher)&&(e.staggerGuard<=0||options.finisher)){e.phase='hurt';e.volley=0;e.waveTotal=0;e.waveIndex=0;e.timer=options.finisher?.42:.18;e.staggerGuard=1.1}
  }
  dodge(kind='forward'){
   const p=this.player;if(this.mode!=='playing'||p.evadeCd>0||p.attack>.22||(kind==='back'&&p.z>0))return false;
-  const threat=this.enemies.some(e=>!e.dead&&e.phase==='windup'&&e.timer<.25&&!(e.type==='lancer'&&e.move==='thrust'&&p.crouching)&&!(e.type==='captain'&&e.move==='thrust'&&p.crouching)&&(p.x-e.x)*e.lockedFace>=-24&&(e.type==='gunner'&&e.move==='butt'?p.z<BUTT.height&&Math.abs(e.x-p.x)<BUTT.reach:Math.abs(e.x-p.x)<TYPES[e.type].reach+35))||this.projectiles.some(s=>!s.dead&&!s.friendly&&Math.abs(s.x-p.x)<95&&s.vx*(p.x-s.x)>0&&(s.kind==='wave'?p.z<35:Math.abs(s.z-(p.z+(p.crouching?26:52)))<(p.crouching?26:39)))||this.barrels.some(b=>b.phase==='fuse'&&b.timer<.20&&Math.abs(b.x-p.x)<=b.radius&&p.z<68);
+  const threat=this.enemies.some(e=>{
+   if(e.dead||e.phase!=='windup'||e.timer>=.25)return false;
+   if(e.type==='captain'&&e.move==='wave')return p.z<35&&Math.abs(e.x-p.x)<TYPES.captain.reach+35;
+   if(['lancer','captain'].includes(e.type)&&e.move==='thrust'&&p.crouching)return false;
+   return (p.x-e.x)*e.lockedFace>=-24&&(e.type==='gunner'&&e.move==='butt'?p.z<BUTT.height&&Math.abs(e.x-p.x)<BUTT.reach:Math.abs(e.x-p.x)<TYPES[e.type].reach+35);
+  })||this.projectiles.some(s=>!s.dead&&!s.friendly&&Math.abs(s.x-p.x)<95&&s.vx*(p.x-s.x)>0&&(s.kind==='wave'?p.z<35:Math.abs(s.z-(p.z+(p.crouching?26:52)))<(p.crouching?26:39)))||this.barrels.some(b=>b.phase==='fuse'&&b.timer<.20&&Math.abs(b.x-p.x)<=b.radius&&p.z<68);
   this.cancelThrow();p.crouching=false;p.landTime=0;p.evadeKind=kind;p.evadeDir=p.face*(kind==='back'?-1:1);p.evadeSpeed=kind==='back'?360:590;p.evade=kind==='back'?.18:.23;p.evadeCd=kind==='back'?.48:.70;p.inv=kind==='back'?.13:.26;p.attack=0;p.cooldown=Math.min(p.cooldown,.14);
   if(threat){p.counter=1.6;this.charge(25);this.stats.perfectDodges++;this.emit('perfect',p.x)}this.emit('dodge',kind);return true;
  }
@@ -140,18 +145,20 @@ class SabbathGame{
  }
  beginGuard(e){
   const captain=e.type==='captain';e.move=captain?(e.enraged?['wave','thrust','slam','wave']:['thrust','slam','wave'])[e.attackNo%(e.enraged?4:3)]:(e.attackNo%2?'sweep':'thrust');e.attackNo++;e.lockedFace=e.face;e.phase='windup';e.hitPlayer=false;e.walk=false;
-  e.timer=(captain?(e.move==='slam'?1.1:e.move==='wave'?1.05:.85):.85)*(e.enraged?.88:1);this.emit('warning',{x:e.x,type:e.type,move:e.move,low:!!e.shotLow,enraged:!!e.enraged});
+  // Commit the whole sequence before its first tell. Crossing half health can
+  // affect the next attack, never add an unannounced wave to this one.
+  e.waveTotal=captain&&e.move==='wave'?(e.enraged?2:1):0;e.waveIndex=0;
+  e.timer=(captain?(e.move==='slam'?1.1:e.move==='wave'?1.05:.85):.85)*(e.enraged?.88:1);e.windupDuration=e.timer;this.emit('warning',{x:e.x,type:e.type,move:e.move,low:!!e.shotLow,enraged:!!e.enraged});
   if(!this.markers.has(e.type)){this.markers.add(e.type);this.emit('caption',captain?'СОТНИК: укол — вниз; волна — прыжок; замах сверху — рывок за спину.':'КОПЕЙЩИК: под высоким уколом присядь. Низкий подсек — перепрыгни.');}
  }
  tickGuard(e,dt){
   const p=this.player,cfg=TYPES[e.type],captain=e.type==='captain';e.flash=Math.max(0,e.flash-dt);e.broken=Math.max(0,e.broken-dt);e.staggerGuard=Math.max(0,e.staggerGuard-dt);e.walk=false;
-  if(e.dead){e.death=Math.max(0,e.death-dt*.8);e.waveEcho=0;return;}
-  if(captain&&!e.enraged&&e.hp<e.maxHp*.5){e.enraged=true;this.emit('caption','СОТНИК СБРОСИЛ ОСТОРОЖНОСТЬ. После первой волны придёт вторая.');}
-  if(e.waveEcho>0){e.waveEcho-=dt;if(e.waveEcho<=0){this.spawnShot(e,'wave',-1);this.spawnShot(e,'wave',1);this.emit('enemyStrike',{x:e.x,heavy:true,type:e.type});}}
-  e.timer-=dt;if(!['windup','strike'].includes(e.phase))e.face=e.x>p.x?-1:1;
+  if(e.dead){e.death=Math.max(0,e.death-dt*.8);e.waveTotal=0;e.waveIndex=0;return;}
+  if(captain&&!e.enraged&&e.hp<e.maxHp*.5){e.enraged=true;this.emit('caption','СОТНИК В ЯРОСТИ. Берегись двойных волн.');}
+  e.timer-=dt;
   if(e.phase==='hurt'){if(e.timer<=0){e.phase='recover';e.timer=.4;}return;}
   if(e.phase==='windup'&&e.timer<=0){e.phase='strike';e.timer=e.move==='thrust'?.30:.20;e.face=e.lockedFace;
-   if(e.move==='wave'){this.spawnShot(e,'wave',-1);this.spawnShot(e,'wave',1);if(e.enraged)e.waveEcho=.5;}
+   if(e.move==='wave'){this.spawnShot(e,'wave',-1);this.spawnShot(e,'wave',1);e.waveIndex=(e.waveIndex||0)+1;}
    if(e.move==='slam'||e.move==='sweep')this.strikeBarrels(e,e.move==='slam'?125:145);
    this.emit('enemyStrike',{x:e.x,heavy:captain,type:e.type});
   }
@@ -160,10 +167,13 @@ class SabbathGame{
    const front=(p.x-e.x)*e.lockedFace>=-20,range=e.move==='slam'?125:145;
    const vertical=e.move==='thrust'?Math.abs(83-(p.z+(p.crouching?26:52)))<(p.crouching?26:39):e.move==='sweep'?p.z<38:p.z<145;
    if(e.move!=='wave'&&!e.hitPlayer&&front&&Math.abs(p.x-e.x)<range&&vertical){this.hurt(cfg.damage+(e.move==='slam'?5:0),{x:e.x,enemyType:e.type,move:e.move});e.hitPlayer=true;}
-   if(e.timer<=0){e.phase='recover';e.timer=captain?(e.move==='slam'?1.55:e.move==='wave'?1.35:1.25):1.10;}return;
+   if(e.timer<=0){
+    if(captain&&e.move==='wave'&&e.waveIndex<e.waveTotal){e.phase='windup';e.timer=e.windupDuration=.30;this.emit('warning',{x:e.x,type:e.type,move:e.move,low:true,enraged:true,followup:true});}
+    else{e.phase='recover';e.timer=captain?(e.move==='slam'?1.55:e.move==='wave'?1.35:1.25):1.10;}
+   }return;
   }
   if(e.phase==='recover'){if(e.timer<=0)e.phase='idle';else return;}
-  const distance=Math.abs(p.x-e.x);if(e.phase!=='idle'||distance>470)return;
+  const distance=Math.abs(p.x-e.x);if(e.phase!=='idle'||distance>470)return;e.face=e.x>p.x?-1:1;
   const onScreen=e.x>=this.cam+24&&e.x<=this.cam+this.viewWidth-24;
   if(distance>cfg.reach-14||!onScreen){e.x+=e.face*cfg.speed*dt;e.walk=true;}else if(this.enemies.filter(n=>!n.dead&&['windup','strike'].includes(n.phase)).length<2)this.beginGuard(e);
  }
