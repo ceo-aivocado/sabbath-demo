@@ -35,6 +35,7 @@ class SabbathSound{
   if(type==='captain'&&move==='wave'){for(const delay of [0,.13]){this.tone(85,.16,.075,'triangle',.65,pan,at+delay);this.noise(.06,.07,460,{pan,at:at+delay});}if(enraged)this.tone(220,.20,.035,'sine',.7,pan,at+.23);}
   else if(type==='captain'&&move==='slam'){this.noise(.24,.10,500,{pan,at});this.tone(120,.30,.06,'triangle',1.6,pan,at);}
   else if(type==='lancer'||type==='captain'){const low=move==='sweep';this.noise(low?.17:.10,.075,low?950:2400,{pan,type:'bandpass',q:.8,at});this.tone(low?190:390,.15,.055,'triangle',low?.65:1.25,pan,at);}
+  else if(type==='gunner'&&move==='butt'){this.noise(.13,.09,850,{pan,at});this.tone(155,.16,.065,'triangle',.65,pan,at+.035);}
   else if(type==='gunner'){this.noise(.04,.13,3600,{pan,at});this.tone(low?280:520,.09,.055,'triangle',.8,pan,at+.06);}
   else if(type==='heavy'){this.noise(.22,.14,280,{pan,at});this.tone(68,.25,.075,'triangle',1.35,pan,at);}
   else if(type==='spitter'){this.noise(.18,.10,600,{pan,type:'bandpass',q:2,at});this.tone(90,.15,.055,'sine',.65,pan,at);}

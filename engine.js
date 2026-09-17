@@ -13,6 +13,7 @@ function segmentEntry(x0,z0,x1,z1,left,right,bottom,top){
 }
 const CHAPTERS=typeof module!=='undefined'?require('./chapters.js'):root.SabbathChapters;
 const killsBefore=chapter=>CHAPTERS.slice(1,chapter).reduce((sum,c)=>sum+c.types.length,0);
+const BUTT={trigger:115,reach:105,height:120,windup:.70,active:.18,recover:1.10,damage:20};
 const TYPES={
  cutter:{hp:144,speed:75,reach:76,windup:.60,recover:.80,damage:20},
  crawler:{hp:112,speed:91,reach:205,windup:.70,recover:1.05,damage:23},
@@ -29,7 +30,7 @@ class SabbathGame{
   this.viewWidth=this.viewWidth||960;this.mode='intro';this.time=carry.time||0;this.kills=0;this.cam=0;this.events=[];this.powerUses=0;this.combo=0;this.comboAge=0;this.shake=0;this.hitstop=0;this.projectiles=[];this.nextProjectile=0;this.attackTargets=new Set();this.attackBuffer=0;this.jumpBuffer=0;this.stats={hits:0,perfectDodges:0,parries:0,airHits:0,knifeHits:0,damageTaken:0};
   this.player={x:130,z:0,vz:0,hp:100,maxHp:100,nav:0,face:1,attack:0,cooldown:0,evade:0,evadeCd:0,evadeKind:'forward',evadeDir:1,evadeSpeed:590,inv:0,moving:false,power:0,transform:0,stride:0,landTime:0,counter:0,knives:3,throwCd:0,throwTime:0,throwPending:0,throwFacing:1,airAttack:false,lowAttack:false,crouching:false,attackHit:false};
   const cfg=this.level;this.gates=cfg.gates.map(([x,ids])=>[x,[...ids]]);
-  this.enemies=cfg.types.map((type,i)=>({id:i,type,x:cfg.xs[i],z:0,hp:TYPES[type].hp,maxHp:TYPES[type].hp,heavy:['heavy','captain'].includes(type),bounds:[...cfg.bounds[this.gates.findIndex(g=>g[1].includes(i))]],phase:cfg.buried.includes(i)?'buried':'idle',timer:0,flash:0,face:-1,dead:false,death:0,spawnX:cfg.xs[i],attackNo:0,staggerGuard:0,broken:0,walk:false,stride:0,hitPlayer:false,lockedFace:-1,move:'thrust'}));
+  this.enemies=cfg.types.map((type,i)=>({id:i,type,x:cfg.xs[i],z:0,hp:TYPES[type].hp,maxHp:TYPES[type].hp,heavy:['heavy','captain'].includes(type),bounds:[...cfg.bounds[this.gates.findIndex(g=>g[1].includes(i))]],phase:cfg.buried.includes(i)?'buried':'idle',timer:0,flash:0,face:-1,dead:false,death:0,spawnX:cfg.xs[i],attackNo:0,shotNo:0,staggerGuard:0,broken:0,walk:false,stride:0,hitPlayer:false,lockedFace:-1,move:'thrust'}));
   if(cfg.elite){const elite=this.enemies[cfg.elite[0]];elite.hp=elite.maxHp=cfg.elite[1];elite.elite=true;}
   this.barrels=(cfg.barrels||[]).map((x,id)=>({id,x,height:62,halfWidth:24,radius:132,phase:'idle',timer:0,duration:0,smoke:0}));
   this.exit=cfg.exit;this.markers=new Set();this.hazards=(cfg.embers||[]).map((x,i)=>({x,width:58,phase:'cooldown',timer:1.8+i*.75,hitPlayer:false,hitIds:new Set()}));
@@ -101,7 +102,7 @@ class SabbathGame{
  }
  dodge(kind='forward'){
   const p=this.player;if(this.mode!=='playing'||p.evadeCd>0||p.attack>.22||(kind==='back'&&p.z>0))return false;
-  const threat=this.enemies.some(e=>!e.dead&&e.phase==='windup'&&e.timer<.25&&!(e.type==='lancer'&&e.move==='thrust'&&p.crouching)&&!(e.type==='captain'&&e.move==='thrust'&&p.crouching)&&(p.x-e.x)*e.lockedFace>=-24&&Math.abs(e.x-p.x)<TYPES[e.type].reach+35)||this.projectiles.some(s=>!s.dead&&!s.friendly&&Math.abs(s.x-p.x)<95&&s.vx*(p.x-s.x)>0&&(s.kind==='wave'?p.z<35:Math.abs(s.z-(p.z+(p.crouching?26:52)))<(p.crouching?26:39)))||this.barrels.some(b=>b.phase==='fuse'&&b.timer<.20&&Math.abs(b.x-p.x)<=b.radius&&p.z<68);
+  const threat=this.enemies.some(e=>!e.dead&&e.phase==='windup'&&e.timer<.25&&!(e.type==='lancer'&&e.move==='thrust'&&p.crouching)&&!(e.type==='captain'&&e.move==='thrust'&&p.crouching)&&(p.x-e.x)*e.lockedFace>=-24&&(e.type==='gunner'&&e.move==='butt'?p.z<BUTT.height&&Math.abs(e.x-p.x)<BUTT.reach:Math.abs(e.x-p.x)<TYPES[e.type].reach+35))||this.projectiles.some(s=>!s.dead&&!s.friendly&&Math.abs(s.x-p.x)<95&&s.vx*(p.x-s.x)>0&&(s.kind==='wave'?p.z<35:Math.abs(s.z-(p.z+(p.crouching?26:52)))<(p.crouching?26:39)))||this.barrels.some(b=>b.phase==='fuse'&&b.timer<.20&&Math.abs(b.x-p.x)<=b.radius&&p.z<68);
   this.cancelThrow();p.crouching=false;p.landTime=0;p.evadeKind=kind;p.evadeDir=p.face*(kind==='back'?-1:1);p.evadeSpeed=kind==='back'?360:590;p.evade=kind==='back'?.18:.23;p.evadeCd=kind==='back'?.48:.70;p.inv=kind==='back'?.13:.26;p.attack=0;p.cooldown=Math.min(p.cooldown,.14);
   if(threat){p.counter=1.6;this.charge(25);this.stats.perfectDodges++;this.emit('perfect',p.x)}this.emit('dodge',kind);return true;
  }
@@ -114,8 +115,10 @@ class SabbathGame{
 
  hurt(d){const p=this.player;if(p.inv>0||this.mode!=='playing')return false;p.hp=Math.max(0,p.hp-d);p.inv=.62;p.attack=0;this.cancelThrow();this.attackBuffer=0;this.shake=4;this.combo=0;this.stats.damageTaken+=d;this.emit('hurt');if(p.hp===0){this.mode='dead';this.emit('dead')}return true}
  spawnShot(e,kind,direction){if(kind==='lead'){this.projectiles.push({id:this.nextProjectile++,kind,x:e.x+direction*85,z:e.shotLow?48:88,vx:direction*510,life:1.25,damage:22,dead:false});this.emit('gunshot',{x:e.x+direction*85,z:e.shotLow?48:88,face:direction});return;}this.projectiles.push({id:this.nextProjectile++,kind,x:e.x+direction*30,z:kind==='wave'?8:82,vx:direction*(kind==='wave'?240:210),life:kind==='wave'?1.15:2.8,damage:kind==='wave'?25:18,dead:false});}
- beginEnemy(e){if(['lancer','captain'].includes(e.type)){this.beginGuard(e);return;}const cfg=TYPES[e.type];e.phase='windup';e.timer=cfg.windup*(e.enraged?.75:1);e.windupDuration=e.timer;e.lockedFace=e.face;e.attackNo++;e.shotLow=e.type==='gunner'&&e.attackNo%2===0;e.walk=false;e.hitPlayer=false;this.emit('warning',{x:e.x,type:e.type,move:e.move,low:!!e.shotLow,enraged:!!e.enraged});
-  if(!this.markers.has(e.type)){this.markers.add(e.type);const tips={gunner:'СТРЕЛОК: высокий выстрел — присядь; низкий — прыгни. Кортик сбивает прицел.',cutter:'Вспышка перед ударом. Рывок в последний момент усиливает ответ.',crawler:'ПОЛЗУН: низкий бросок. Перепрыгни и ударь сверху.',spitter:'ПЛЕВУН: присядь под сгустком или отбей его саблей.',heavy:'УТОПЛЕННИК: перепрыгни волну. После удара он уязвим.'};this.emit('caption',tips[e.type])}
+ beginEnemy(e){if(['lancer','captain'].includes(e.type)){this.beginGuard(e);return;}const cfg=TYPES[e.type];
+  if(e.type==='gunner'){e.move=Math.abs(this.player.x-e.x)<BUTT.trigger?'butt':'shot';e.volley=0;if(e.move==='shot')e.shotNo=(e.shotNo||0)+1;}
+  const butt=e.type==='gunner'&&e.move==='butt';e.phase='windup';e.timer=(butt?BUTT.windup:cfg.windup)*(e.enraged?.75:1);e.windupDuration=e.timer;e.lockedFace=e.face;e.attackNo++;e.shotLow=e.type==='gunner'&&!butt&&e.shotNo%2===0;e.walk=false;e.hitPlayer=false;this.emit('warning',{x:e.x,type:e.type,move:e.move,low:!!e.shotLow,enraged:!!e.enraged});
+  const marker=butt?'gunner-butt':e.type;if(!this.markers.has(marker)){this.markers.add(marker);const tips={'gunner-butt':'ПРИКЛАД: отскочи или зайди за спину.',gunner:'СТРЕЛОК: высокий выстрел — присядь; низкий — прыгни. Кортик сбивает прицел.',cutter:'Вспышка перед ударом. Рывок в последний момент усиливает ответ.',crawler:'ПОЛЗУН: низкий бросок. Перепрыгни и ударь сверху.',spitter:'ПЛЕВУН: присядь под сгустком или отбей его саблей.',heavy:'УТОПЛЕННИК: перепрыгни волну. После удара он уязвим.'};this.emit('caption',tips[marker])}
  }
  beginGuard(e){
   const captain=e.type==='captain';e.move=captain?(e.enraged?['wave','thrust','slam','wave']:['thrust','slam','wave'])[e.attackNo%(e.enraged?4:3)]:(e.attackNo%2?'sweep':'thrust');e.attackNo++;e.lockedFace=e.face;e.phase='windup';e.hitPlayer=false;e.walk=false;
@@ -199,8 +202,8 @@ class SabbathGame{
   const dist=Math.abs(e.x-p.x);e.timer-=dt;if(e.echo>0){e.echo-=dt;if(e.echo<=0){this.spawnShot(e,'wave',-1);this.spawnShot(e,'wave',1);this.emit('enemyStrike',{x:e.x,heavy:true,type:'heavy'})}}if(e.phase!=='windup'&&e.phase!=='strike')e.face=e.x>p.x?-1:1;
   if(e.volley>0){e.volley-=dt;if(e.volley<=0)this.spawnShot(e,'lead',e.lockedFace);}
   if(e.phase==='hurt'){if(e.timer<=0){e.phase='recover';e.timer=.3}return}
-  if(e.phase==='windup'&&e.timer<=0){e.phase='strike';e.timer=e.type==='crawler'?.40:.18;e.face=e.lockedFace;
-   if(e.type==='gunner'){this.spawnShot(e,'lead',e.face);e.volley=.18;e.timer=.32;}
+  if(e.phase==='windup'&&e.timer<=0){e.phase='strike';e.timer=e.type==='crawler'?.40:e.type==='gunner'&&e.move==='butt'?BUTT.active:.18;e.face=e.lockedFace;
+   if(e.type==='gunner'&&e.move!=='butt'){this.spawnShot(e,'lead',e.face);e.volley=.18;e.timer=.32;}
    if(e.type==='spitter')this.spawnShot(e,'spit',e.face);
    if(e.heavy){this.spawnShot(e,'wave',-1);this.spawnShot(e,'wave',1);if(e.enraged)e.echo=.38}
    if(e.heavy||e.type==='cutter')this.strikeBarrels(e,cfg.reach);
@@ -208,15 +211,16 @@ class SabbathGame{
   }
   if(e.phase==='strike'){
    if(e.type==='crawler')e.x+=e.lockedFace*395*dt;
-   const front=(p.x-e.x)*e.lockedFace>=-24,range=e.type==='crawler'?57:cfg.reach;
-   if(!['spitter','gunner'].includes(e.type)&&!e.hitPlayer&&Math.abs(p.x-e.x)<range&&front&&p.z<(e.type==='crawler'?42:70)){this.hurt(cfg.damage);e.hitPlayer=true}
-   if(e.timer<=0){e.phase='recover';e.timer=cfg.recover}return;
+   const butt=e.type==='gunner'&&e.move==='butt',front=(p.x-e.x)*e.lockedFace>=-24,range=butt?BUTT.reach:e.type==='crawler'?57:cfg.reach;
+   if((butt||!['spitter','gunner'].includes(e.type))&&!e.hitPlayer&&Math.abs(p.x-e.x)<range&&front&&p.z<(butt?BUTT.height:e.type==='crawler'?42:70)){this.hurt(butt?BUTT.damage:cfg.damage);e.hitPlayer=true}
+   if(e.timer<=0){e.phase='recover';e.timer=butt?BUTT.recover:cfg.recover}return;
   }
   if(e.phase==='recover'){if(e.timer<=0)e.phase='idle';else return}
   if(e.phase!=='idle'||dist>470)return;
   const onScreen=e.x>=this.cam+24&&e.x<=this.cam+this.viewWidth-24;
   const active=this.enemies.filter(n=>!n.dead&&(n.phase==='windup'||n.phase==='strike')).length;
-  if(['spitter','gunner'].includes(e.type)&&dist<180&&onScreen){e.x-=e.face*cfg.speed*.8*dt;e.walk=true;return}
+  if(e.type==='gunner'&&dist<BUTT.trigger&&onScreen){if(active<2)this.beginEnemy(e);return;}
+  if(['spitter','gunner'].includes(e.type)&&dist<180&&onScreen){const retreat=clamp(e.x-e.face*cfg.speed*.8*dt,...e.bounds);if(Math.abs(retreat-e.x)>.001){e.x=retreat;e.walk=true;return;}}
   if(dist>cfg.reach-14||!onScreen){e.x+=e.face*cfg.speed*dt;e.walk=true}else if(active<2)this.beginEnemy(e);
  }
  tick(dt,input={}){
