@@ -62,7 +62,7 @@ class SabbathGame{
  }
 
  emit(type,data){this.events.push({type,data})}
- charge(amount){const p=this.player,was=p.nav>=100;p.nav=clamp(p.nav+amount,0,100);if(!was&&p.nav===100&&p.power===0)this.emit('toast','НАВЬ ПРОСНУЛАСЬ. НАЖМИ C — ПРЕВРАТИТЬСЯ.')}
+ charge(amount){const p=this.player,was=p.nav>=100;p.nav=clamp(p.nav+amount,0,100);if(!was&&p.nav===100&&p.power===0)this.emit('toast','НАВЬ ПРОСНУЛАСЬ. НАЖМИ D — ПРЕВРАТИТЬСЯ.')}
  attack(){
   const p=this.player;if(this.mode!=='playing')return false;
   if(p.cooldown>0||p.evade>0||p.throwPending>0){this.attackBuffer=Math.max(.14,Math.min(.24,p.evade+.03));return false}
