@@ -31,12 +31,17 @@ main{min-width:0;max-width:100vw}#stage,canvas{min-width:0}
  #touch{position:absolute;inset:0;display:block;height:auto;pointer-events:none;background:none}
  #touch span{display:none}
  #touch button{position:absolute;pointer-events:auto;width:54px;min-width:54px;height:54px;min-height:54px;padding:0;border-radius:50%;border:1px solid #d8c59c80;background:#111b2a85;color:#eee3cf;font:8px Arial;letter-spacing:.2px;box-shadow:0 2px 12px #0004;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
- #touch button[data-key="a"]{left:calc(max(18px,env(safe-area-inset-left)) + 0px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 8px);font-size:23px}
- #touch button[data-key="d"]{left:calc(max(18px,env(safe-area-inset-left)) + 66px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 8px);font-size:23px}
- #touch button[data-key="j"]{right:max(18px,env(safe-area-inset-right));bottom:calc(max(16px,env(safe-area-inset-bottom)) + 8px);width:62px;min-width:62px;height:62px;background:#9e784dad;color:#fff3d2;font-size:9px}
- #touch button[data-key=" "]{right:calc(max(18px,env(safe-area-inset-right)) + 8px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 82px)}
- #touch button[data-key="Shift"]{right:calc(max(18px,env(safe-area-inset-right)) + 76px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 12px)}
- #touch button[data-key="e"]{right:calc(max(18px,env(safe-area-inset-right)) + 76px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 82px);border-color:#b998e0aa;background:#38224880}
+ /* Both thumb pads use the same 64px diamond spacing and an empty centre. */
+ #touch{--left-edge:max(18px,env(safe-area-inset-left));--edge:max(18px,env(safe-area-inset-right));--base:max(12px,env(safe-area-inset-bottom));--pad-step:64px}
+ #touch button[data-key="a"],#touch button[data-key="d"],#touch button[data-key=" "],#touch button[data-key="x"]{font-size:27px}
+ #touch button[data-key="a"]{left:var(--left-edge);bottom:calc(var(--base) + var(--pad-step))}
+ #touch button[data-key=" "]{left:calc(var(--left-edge) + var(--pad-step));bottom:calc(var(--base) + var(--pad-step)*2)}
+ #touch button[data-key="d"]{left:calc(var(--left-edge) + var(--pad-step)*2);bottom:calc(var(--base) + var(--pad-step))}
+ #touch button[data-key="x"]{left:calc(var(--left-edge) + var(--pad-step));bottom:var(--base)}
+ #touch button[data-key="v"]{right:calc(var(--edge) + var(--pad-step));bottom:calc(var(--base) + var(--pad-step)*2);font-size:9px}
+ #touch button[data-key="Shift"]{right:calc(var(--edge) + var(--pad-step)*2);bottom:calc(var(--base) + var(--pad-step));font-size:10px}
+ #touch button[data-key="j"]{right:var(--edge);bottom:calc(var(--base) + var(--pad-step) - 4px);width:62px;min-width:62px;height:62px;min-height:62px;background:#9e784dad;color:#fff3d2;font-size:11px}
+ #touch button[data-key="e"]{right:calc(var(--edge) + var(--pad-step));bottom:var(--base);border-color:#b998e0aa;background:#38224880;font-size:10px}
  #touch button.held{background:#d9bc82c9;color:#111;transform:scale(.94)}
 }
 
@@ -52,23 +57,7 @@ main{min-width:0;max-width:100vw}#stage,canvas{min-width:0}
 /* Game gestures belong to the controls, never to page zoom or scrolling. */
 html,body,#stage,#touch,canvas{touch-action:none;overscroll-behavior:none}
 button{touch-action:manipulation}#touch button{touch-action:none}
-@media(orientation:landscape){
- #touch{--edge:max(18px,env(safe-area-inset-right));--base:max(12px,env(safe-area-inset-bottom))}
- #touch button[data-key=" "]{right:calc(var(--edge) + 64px);bottom:calc(var(--base) + 128px)}
- #touch button[data-key="Shift"]{right:calc(var(--edge) + 128px);bottom:calc(var(--base) + 64px)}
- #touch button[data-key="j"]{right:var(--edge);bottom:calc(var(--base) + 60px)}
- #touch button[data-key="e"]{right:calc(var(--edge) + 64px);bottom:var(--base)}
-}
-@media(orientation:landscape){
- #touch button[data-key="a"],#touch button[data-key="d"]{width:64px;min-width:64px;height:64px;min-height:64px;font-size:27px}
- #touch button[data-key="d"]{left:calc(max(18px,env(safe-area-inset-left)) + 88px)}
-}
-
 #touch button.ready{box-shadow:0 0 17px #b288d766;border-color:#dbc2ff;background:#553574aa}
-
-@media(orientation:landscape){#touch button[data-key="Shift"],#touch button[data-key=" "],#touch button[data-key="e"]{font-size:10px}#touch button[data-key="j"]{font-size:11px}}
-
-@media(orientation:landscape){#touch button[data-key="x"]{right:calc(var(--edge) + 69px);bottom:calc(var(--base) + 69px);width:44px;min-width:44px;height:44px;min-height:44px;font-size:7px;border-style:dashed}}
 
 /* Desktop uses the same combat, with a keyboard-first presentation. */
 .desktop #touch{display:none!important}.desktop .keys-preview{display:block}.desktop .objective small{display:none}
@@ -79,22 +68,6 @@ button{touch-action:manipulation}#touch button{touch-action:none}
 .edition-links{position:absolute;left:max(6%,env(safe-area-inset-left));bottom:18px;display:flex;gap:14px;align-items:center;font:10px Arial;letter-spacing:.6px}.edition-links a{color:#b9ab91;text-decoration:none;padding:8px 0}.edition-links a:hover{color:#f2d8a4}.edition-links span{color:#6a6d6a}@media(max-height:400px){.edition-links{bottom:8px;font-size:9px}}
 
 @media(orientation:portrait){.desktop #rotate-hint{display:none!important}.desktop header,.desktop footer{display:none!important}.desktop main{padding:0;width:100%;height:100dvh}.desktop #stage{display:block!important;position:fixed;left:0;top:50%;transform:translateY(-50%);width:100vw;height:56.25vw;min-height:0;border:0}.desktop #stage canvas{width:100%;height:100%;object-fit:fill}.desktop .overlay{inset:0;padding:4% 6%}.desktop h1{font-size:clamp(26px,5vw,45px)}.desktop .intro-copy p:not(.brief),.desktop .brief,.desktop .intro-note{display:none}.desktop .keys-preview{font-size:10px}.desktop #caption{bottom:10px}.desktop .edition-links{bottom:8px}}
-
-@media(orientation:landscape){#touch button[data-key="q"]{left:calc(max(18px,env(safe-area-inset-left)) + 51px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 88px);width:50px;min-width:50px;height:50px;min-height:50px;font-size:9px;border-color:#b9c4c899;background:#23313b99}}
-
-@media(orientation:landscape){#touch button[data-key="q"]{left:calc(max(18px,env(safe-area-inset-left)) + 7px)}#touch button[data-key="v"]{left:calc(max(18px,env(safe-area-inset-left)) + 95px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 88px);width:50px;min-width:50px;height:50px;min-height:50px;font-size:8px;border-color:#c1a66a99;background:#302a1e99}}
-
-/* Left thumb controls: three equal targets, with a full target-width gap. */
-@media(orientation:landscape){
- #touch{--move-size:72px;--move-left:max(18px,env(safe-area-inset-left));--move-bottom:calc(max(16px,env(safe-area-inset-bottom)) + 8px)}
- #touch button[data-key="a"],#touch button[data-key="q"],#touch button[data-key="d"]{width:var(--move-size);min-width:var(--move-size);height:var(--move-size);min-height:var(--move-size);bottom:var(--move-bottom)}
- #touch button[data-key="a"]{left:var(--move-left)}
- #touch button[data-key="q"]{left:calc(var(--move-left) + var(--move-size)*2);font-size:10px}
- #touch button[data-key="d"]{left:calc(var(--move-left) + var(--move-size)*4)}
- #touch button[data-key="v"]{left:calc(var(--move-left) + var(--move-size)*2.5 - 25px);bottom:calc(var(--move-bottom) + var(--move-size) + 18px)}
-}
-@media(orientation:landscape) and (max-width:600px){#touch{--move-size:64px}}
-
 
 #story-copy{position:absolute;top:15%;left:26%;width:48%;z-index:3;text-align:center;pointer-events:none;text-shadow:0 2px 8px #000,0 0 25px #000;background:radial-gradient(ellipse,#070b1199,transparent 72%);padding:16px}
 #story-title{font:10px Arial;letter-spacing:2.5px;color:#d6b988;margin-bottom:12px}#story-text{font:clamp(13px,2.2vh,19px)/1.5 Georgia;color:#eee3ca}
@@ -136,7 +109,7 @@ body.phone-portrait #rotate-hint p{font:16px/1.5 Arial;max-width:270px;color:#dc
 @media(orientation:landscape){body:not(.desktop):not([data-scene="house"]) #toast{top:calc(clamp(80px,21vh,90px) + 40px);left:19%;width:62%;font:10px/1.3 Arial,sans-serif;letter-spacing:.5px}}
 </style></head>
 <body><script>
-window.SABBATH_BUILD={release:"v29"};
+window.SABBATH_BUILD={release:"v30"};
 if(location.pathname.endsWith('/desktop.html')){
  document.body.classList.add('desktop');document.title='Sabbath Desktop';
  document.querySelector('link[rel="manifest"]').setAttribute('href','desktop.webmanifest');
@@ -147,7 +120,7 @@ if(location.pathname.endsWith('/desktop.html')){
 <div id="story-copy" hidden><div id="story-title"></div><p id="story-text"></p></div><button id="interact-hint" hidden></button><div id="caption" role="status"></div><div id="toast" role="status"></div>
 <div class="overlay" id="intro"><div class="intro-copy"><div class="eyebrow">ПОЛТАВСКАЯ СЛОБОДА · ПОСЛЕ НАБЕГА</div><h1>Пепел<br>у переправы</h1><p>Река принесла его домой.<br>Тишина встретила первой.</p><p class="brief">Пройди к дому через разорённую слободу.<br>Пять боевых глав: от переправы до Сторожи.<br>Пустой дом, мокрые сёла, сгоревший скит.</p><button class="primary" id="start" disabled>ЗАГРУЗКА · 0%</button><div id="load-status" role="status" aria-live="polite"><span id="load-copy">Готовим сцену…</span><div id="load-meter" role="progressbar" aria-label="Подготовка сцены" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="load-fill"></i></div></div><button id="fresh-start" class="secondary" hidden>НОВАЯ ИГРА</button><div class="keys-preview">← → — идти <b>·</b> Z — сабля <b>·</b> Shift — рывок <b>·</b> ↓+Shift / Q — отскок<br>Пробел — прыжок <b>·</b> ↓ / X — присесть <b>·</b> C — Навь <b>·</b> V — кортик</div></div><nav class="edition-links" aria-label="Вариант управления"><a href="mobile.html">Sabbath Mobile</a><span>·</span><a href="desktop.html">Sabbath Desktop</a></nav><div class="intro-note">СИЛА ИМЕЕТ ЦЕНУ <span>✦</span></div></div>
 <div class="overlay center" id="menu" hidden><div><div class="eyebrow" id="endlabel">ПАУЗА</div><h2 id="endtitle">Тишина между ударами</h2><p id="endcopy"></p><button class="primary" id="continue-level" hidden>ПРОДОЛЖИТЬ ПУТЬ →</button><button class="primary" id="resume">ПРОДОЛЖИТЬ</button><button id="sound" aria-label="Включить звук">ЗВУК: ВЫКЛ</button><button class="secondary" id="new-run" hidden>С ПЕРЕПРАВЫ ЗАНОВО</button><button class="secondary" id="restart">НАЧАТЬ ЗАНОВО</button></div></div>
-<div id="touch" aria-label="Сенсорное управление"><button aria-label="Идти влево" data-key="a">←</button><button aria-label="Идти вправо" data-key="d">→</button><button data-key="q" aria-label="Отскок назад">ОТСКОК</button><button data-key="v" aria-label="Бросить кортик">КОРТИК 3</button><span></span><button aria-label="Прыжок" data-key=" ">ПРЫЖОК</button><button data-key="Shift">РЫВОК</button><button data-key="j">САБЛЯ</button><button data-key="e">НАВЬ</button><button data-key="x" aria-label="Приседание — переключить" aria-pressed="false">ПРИСЕСТЬ</button></div>
+<div id="touch" aria-label="Сенсорное управление"><button aria-label="Идти влево" data-key="a">←</button><button aria-label="Прыжок" data-key=" ">↑</button><button aria-label="Идти вправо" data-key="d">→</button><button data-key="x" aria-label="Приседание — переключить" aria-pressed="false">↓</button><button data-key="v" aria-label="Бросить кортик">КОРТИК 3</button><button data-key="Shift">РЫВОК</button><button data-key="j">САБЛЯ</button><button data-key="e">НАВЬ</button></div>
 </section><footer><span><kbd>←</kbd><kbd>→</kbd> движение</span><span><kbd>Пробел</kbd> прыжок</span><span><kbd>Z</kbd> сабля</span><span><kbd>Shift</kbd> рывок</span><span><kbd>C</kbd> Навь</span><span><kbd>Esc</kbd> пауза</span><div>ПЯТЬ ДОРОГ. ОДНА ПРОПАВШАЯ СЕМЬЯ.</div></footer><div id="rotate-hint"><div class="rotate-brand">SABBATH</div><div class="rotate-subtitle">Пепел у переправы</div><div class="rotate-symbol" aria-hidden="true">↻</div><p>Поверните телефон горизонтально</p></div></main><script>/* Five playable episodes; the house is a separate interlude after episode one. */
 (function(root){
 const chapters=[null,
@@ -1044,8 +1017,8 @@ function events(){for(const e of game.events.splice(0)){if(e.type==='barrelFuse'
 
 function loop(now){if(phonePortrait()!==document.body.classList.contains('phone-portrait'))fitViewport();const dt=Math.min(.05,(now-last)/1000||0);last=now;if(game.mode!=='paused'){clock+=dt;transition=Math.max(0,transition-dt);}const previousDodge=dodgePose(),trailStart=previousDodge?{x:game.player.x,z:game.player.z,pose:previousDodge}:null;game.tick(dt,{left:keys.has('a'),right:keys.has('d'),attack:keys.has('j'),crouch:keys.has('x')||crouchToggle});events();if(['playing','house'].includes(game.mode)){for(let i=particles.length-1;i>=0;i--){let p=particles[i];p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=330*dt;if(p.life<=0)particles.splice(i,1)}updateDodgeTrail(dt,trailStart);const p=game.player,step=Math.floor(p.stride/(p.crouching?28:56));if(p.crouching!==footstepCrouched){footstep=step;footstepCrouched=p.crouching;}if(p.moving&&p.z===0&&p.evade===0&&step!==footstep){soundscape?.step(game.scene,p.power>0);for(let j=0;j<2;j++)particles.push({x:p.x-p.face*9,y:G-1,vx:-p.face*(12+Math.random()*15),vy:-12-Math.random()*16,life:.22,size:2,color:'#9a897044'})}footstep=step;}
  if(soundscape){const boss=game.enemies.find(e=>e.type==='captain'&&!e.dead&&Math.abs(e.x-game.player.x)<520);soundscape.update(dt,{scene:game.scene,mode:game.mode,boss:!!boss,enraged:!!boss?.enraged});}
- const inHouse=game.scene==='house';if(document.body.dataset.scene!==game.scene)document.body.dataset.scene=game.scene;const focus=inHouse&&game.mode==='house'?game.houseFocus():null;$('interact-hint').hidden=!focus||!$('intro').hidden;$('interact-hint').textContent=focus?(focus.id==='door'?'К СЕЧИ →':(matchMedia('(pointer: coarse)').matches?'':'Z · ')+focus.title):'';if(clock>storyUntil||!inHouse)$('story-copy').hidden=true;document.querySelector('[data-key="q"]').textContent=inHouse?'ОСМОТР':'ОТСКОК';document.querySelector('[data-key="j"]').textContent=inHouse?'ОСМОТР':'САБЛЯ';
- document.querySelector('[data-key="x"]').classList.toggle('ready',game.player.crouching);document.querySelector('[data-key="x"]').setAttribute('aria-pressed',String(game.player.crouching));const knifeButton=document.querySelector('[data-key="v"]');knifeButton.textContent='КОРТИК '+game.player.knives;knifeButton.style.opacity=game.player.throwCd>0||game.player.knives===0?'.4':'1';document.querySelector('[data-key="q"]').style.opacity=game.player.evadeCd>0?'.45':'1';document.querySelector('[data-key="Shift"]').style.opacity=game.player.evadeCd>0?'.45':'1';document.querySelector('[data-key="e"]').classList.toggle('ready',game.player.nav>=100||game.player.power>0);
+ const inHouse=game.scene==='house';if(document.body.dataset.scene!==game.scene)document.body.dataset.scene=game.scene;const focus=inHouse&&game.mode==='house'?game.houseFocus():null;$('interact-hint').hidden=!focus||!$('intro').hidden;$('interact-hint').textContent=focus?(focus.id==='door'?'К СЕЧИ →':(matchMedia('(pointer: coarse)').matches?'':'Z · ')+focus.title):'';if(clock>storyUntil||!inHouse)$('story-copy').hidden=true;document.querySelector('[data-key="j"]').textContent=inHouse?'ОСМОТР':'САБЛЯ';
+ document.querySelector('[data-key="x"]').classList.toggle('ready',game.player.crouching);document.querySelector('[data-key="x"]').setAttribute('aria-pressed',String(game.player.crouching));const knifeButton=document.querySelector('[data-key="v"]');knifeButton.textContent='КОРТИК '+game.player.knives;knifeButton.style.opacity=game.player.throwCd>0||game.player.knives===0?'.4':'1';document.querySelector('[data-key="Shift"]').style.opacity=game.player.evadeCd>0?'.45':'1';document.querySelector('[data-key="e"]').classList.toggle('ready',game.player.nav>=100||game.player.power>0);
  $('health').style.width=game.player.hp+'%';$('hptext').textContent=Math.ceil(game.player.hp)+(game.player.maxHp<100?'/'+game.player.maxHp:'');$('power').style.width=(game.player.power>0?game.player.power/8*100:game.player.nav)+'%';$('hud').classList.toggle('demonic',game.player.power>0);$('powertext').textContent=game.player.transform>0?'ПРЕВРАЩЕНИЕ':game.player.power>0?'ДЕМОН · '+game.player.power.toFixed(1)+' С':game.player.nav>=100?(document.body.classList.contains('desktop')?'C · НАВЬ':'НАВЬ ГОТОВА')+' / ЦЕНА: 8 МАКС. HP':'НАВЬ · '+Math.floor(game.player.nav)+' / 100';$('kills').innerHTML=game.kills+' <em>/ '+game.enemies.length+'</em>';$('area').textContent=`${game.chapter}/5 · ${game.areaName()}`;const captain=game.enemies.find(e=>e.type==='captain'&&!e.dead);$('boss-hud').hidden=!captain||Math.abs(captain.x-game.player.x)>520||game.mode==='intro';if(captain){$('boss-health').style.width=100*captain.hp/captain.maxHp+'%';$('boss-name').textContent=captain.enraged?'СОТНИК · ЯРОСТЬ':'СОТНИК СТОРОЖИ';}const noticesVisible=$('intro').hidden&&$('menu').hidden;for(const id of ['caption','toast'])$(id).style.visibility=noticesVisible?'visible':'hidden';$('caption').style.opacity=clock<captionUntil?'1':'0';if(clock>toastUntil)$('toast').textContent='';render();requestAnimationFrame(loop)}
 // Read-only state export for reproducible local browser checks.
 window.sabbath={game,keys,ready:()=>ready,loading:()=>({...loading,failed:[...loading.failed]}),render};loadAssets();requestAnimationFrame(loop);

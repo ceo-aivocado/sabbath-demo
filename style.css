@@ -30,12 +30,17 @@ main{min-width:0;max-width:100vw}#stage,canvas{min-width:0}
  #touch{position:absolute;inset:0;display:block;height:auto;pointer-events:none;background:none}
  #touch span{display:none}
  #touch button{position:absolute;pointer-events:auto;width:54px;min-width:54px;height:54px;min-height:54px;padding:0;border-radius:50%;border:1px solid #d8c59c80;background:#111b2a85;color:#eee3cf;font:8px Arial;letter-spacing:.2px;box-shadow:0 2px 12px #0004;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
- #touch button[data-key="a"]{left:calc(max(18px,env(safe-area-inset-left)) + 0px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 8px);font-size:23px}
- #touch button[data-key="d"]{left:calc(max(18px,env(safe-area-inset-left)) + 66px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 8px);font-size:23px}
- #touch button[data-key="j"]{right:max(18px,env(safe-area-inset-right));bottom:calc(max(16px,env(safe-area-inset-bottom)) + 8px);width:62px;min-width:62px;height:62px;background:#9e784dad;color:#fff3d2;font-size:9px}
- #touch button[data-key=" "]{right:calc(max(18px,env(safe-area-inset-right)) + 8px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 82px)}
- #touch button[data-key="Shift"]{right:calc(max(18px,env(safe-area-inset-right)) + 76px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 12px)}
- #touch button[data-key="e"]{right:calc(max(18px,env(safe-area-inset-right)) + 76px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 82px);border-color:#b998e0aa;background:#38224880}
+ /* Both thumb pads use the same 64px diamond spacing and an empty centre. */
+ #touch{--left-edge:max(18px,env(safe-area-inset-left));--edge:max(18px,env(safe-area-inset-right));--base:max(12px,env(safe-area-inset-bottom));--pad-step:64px}
+ #touch button[data-key="a"],#touch button[data-key="d"],#touch button[data-key=" "],#touch button[data-key="x"]{font-size:27px}
+ #touch button[data-key="a"]{left:var(--left-edge);bottom:calc(var(--base) + var(--pad-step))}
+ #touch button[data-key=" "]{left:calc(var(--left-edge) + var(--pad-step));bottom:calc(var(--base) + var(--pad-step)*2)}
+ #touch button[data-key="d"]{left:calc(var(--left-edge) + var(--pad-step)*2);bottom:calc(var(--base) + var(--pad-step))}
+ #touch button[data-key="x"]{left:calc(var(--left-edge) + var(--pad-step));bottom:var(--base)}
+ #touch button[data-key="v"]{right:calc(var(--edge) + var(--pad-step));bottom:calc(var(--base) + var(--pad-step)*2);font-size:9px}
+ #touch button[data-key="Shift"]{right:calc(var(--edge) + var(--pad-step)*2);bottom:calc(var(--base) + var(--pad-step));font-size:10px}
+ #touch button[data-key="j"]{right:var(--edge);bottom:calc(var(--base) + var(--pad-step) - 4px);width:62px;min-width:62px;height:62px;min-height:62px;background:#9e784dad;color:#fff3d2;font-size:11px}
+ #touch button[data-key="e"]{right:calc(var(--edge) + var(--pad-step));bottom:var(--base);border-color:#b998e0aa;background:#38224880;font-size:10px}
  #touch button.held{background:#d9bc82c9;color:#111;transform:scale(.94)}
 }
 
@@ -51,23 +56,7 @@ main{min-width:0;max-width:100vw}#stage,canvas{min-width:0}
 /* Game gestures belong to the controls, never to page zoom or scrolling. */
 html,body,#stage,#touch,canvas{touch-action:none;overscroll-behavior:none}
 button{touch-action:manipulation}#touch button{touch-action:none}
-@media(orientation:landscape){
- #touch{--edge:max(18px,env(safe-area-inset-right));--base:max(12px,env(safe-area-inset-bottom))}
- #touch button[data-key=" "]{right:calc(var(--edge) + 64px);bottom:calc(var(--base) + 128px)}
- #touch button[data-key="Shift"]{right:calc(var(--edge) + 128px);bottom:calc(var(--base) + 64px)}
- #touch button[data-key="j"]{right:var(--edge);bottom:calc(var(--base) + 60px)}
- #touch button[data-key="e"]{right:calc(var(--edge) + 64px);bottom:var(--base)}
-}
-@media(orientation:landscape){
- #touch button[data-key="a"],#touch button[data-key="d"]{width:64px;min-width:64px;height:64px;min-height:64px;font-size:27px}
- #touch button[data-key="d"]{left:calc(max(18px,env(safe-area-inset-left)) + 88px)}
-}
-
 #touch button.ready{box-shadow:0 0 17px #b288d766;border-color:#dbc2ff;background:#553574aa}
-
-@media(orientation:landscape){#touch button[data-key="Shift"],#touch button[data-key=" "],#touch button[data-key="e"]{font-size:10px}#touch button[data-key="j"]{font-size:11px}}
-
-@media(orientation:landscape){#touch button[data-key="x"]{right:calc(var(--edge) + 69px);bottom:calc(var(--base) + 69px);width:44px;min-width:44px;height:44px;min-height:44px;font-size:7px;border-style:dashed}}
 
 /* Desktop uses the same combat, with a keyboard-first presentation. */
 .desktop #touch{display:none!important}.desktop .keys-preview{display:block}.desktop .objective small{display:none}
@@ -78,22 +67,6 @@ button{touch-action:manipulation}#touch button{touch-action:none}
 .edition-links{position:absolute;left:max(6%,env(safe-area-inset-left));bottom:18px;display:flex;gap:14px;align-items:center;font:10px Arial;letter-spacing:.6px}.edition-links a{color:#b9ab91;text-decoration:none;padding:8px 0}.edition-links a:hover{color:#f2d8a4}.edition-links span{color:#6a6d6a}@media(max-height:400px){.edition-links{bottom:8px;font-size:9px}}
 
 @media(orientation:portrait){.desktop #rotate-hint{display:none!important}.desktop header,.desktop footer{display:none!important}.desktop main{padding:0;width:100%;height:100dvh}.desktop #stage{display:block!important;position:fixed;left:0;top:50%;transform:translateY(-50%);width:100vw;height:56.25vw;min-height:0;border:0}.desktop #stage canvas{width:100%;height:100%;object-fit:fill}.desktop .overlay{inset:0;padding:4% 6%}.desktop h1{font-size:clamp(26px,5vw,45px)}.desktop .intro-copy p:not(.brief),.desktop .brief,.desktop .intro-note{display:none}.desktop .keys-preview{font-size:10px}.desktop #caption{bottom:10px}.desktop .edition-links{bottom:8px}}
-
-@media(orientation:landscape){#touch button[data-key="q"]{left:calc(max(18px,env(safe-area-inset-left)) + 51px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 88px);width:50px;min-width:50px;height:50px;min-height:50px;font-size:9px;border-color:#b9c4c899;background:#23313b99}}
-
-@media(orientation:landscape){#touch button[data-key="q"]{left:calc(max(18px,env(safe-area-inset-left)) + 7px)}#touch button[data-key="v"]{left:calc(max(18px,env(safe-area-inset-left)) + 95px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 88px);width:50px;min-width:50px;height:50px;min-height:50px;font-size:8px;border-color:#c1a66a99;background:#302a1e99}}
-
-/* Left thumb controls: three equal targets, with a full target-width gap. */
-@media(orientation:landscape){
- #touch{--move-size:72px;--move-left:max(18px,env(safe-area-inset-left));--move-bottom:calc(max(16px,env(safe-area-inset-bottom)) + 8px)}
- #touch button[data-key="a"],#touch button[data-key="q"],#touch button[data-key="d"]{width:var(--move-size);min-width:var(--move-size);height:var(--move-size);min-height:var(--move-size);bottom:var(--move-bottom)}
- #touch button[data-key="a"]{left:var(--move-left)}
- #touch button[data-key="q"]{left:calc(var(--move-left) + var(--move-size)*2);font-size:10px}
- #touch button[data-key="d"]{left:calc(var(--move-left) + var(--move-size)*4)}
- #touch button[data-key="v"]{left:calc(var(--move-left) + var(--move-size)*2.5 - 25px);bottom:calc(var(--move-bottom) + var(--move-size) + 18px)}
-}
-@media(orientation:landscape) and (max-width:600px){#touch{--move-size:64px}}
-
 
 #story-copy{position:absolute;top:15%;left:26%;width:48%;z-index:3;text-align:center;pointer-events:none;text-shadow:0 2px 8px #000,0 0 25px #000;background:radial-gradient(ellipse,#070b1199,transparent 72%);padding:16px}
 #story-title{font:10px Arial;letter-spacing:2.5px;color:#d6b988;margin-bottom:12px}#story-text{font:clamp(13px,2.2vh,19px)/1.5 Georgia;color:#eee3ca}
