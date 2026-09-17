@@ -2,6 +2,15 @@
 (function(root){
 'use strict';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+// The first shared horizontal/vertical contact, including entry through a roof.
+function segmentEntry(x0,z0,x1,z1,left,right,bottom,top){
+ let enter=0,exit=1;
+ for(const [start,end,min,max] of [[x0,x1,left,right],[z0,z1,bottom,top]]){
+  const delta=end-start;if(delta===0){if(start<min||start>max)return null;continue;}
+  const a=(min-start)/delta,b=(max-start)/delta;enter=Math.max(enter,Math.min(a,b));exit=Math.min(exit,Math.max(a,b));if(enter>exit)return null;
+ }
+ return enter;
+}
 const CHAPTERS=typeof module!=='undefined'?require('./chapters.js'):root.SabbathChapters;
 const killsBefore=chapter=>CHAPTERS.slice(1,chapter).reduce((sum,c)=>sum+c.types.length,0);
 const TYPES={
@@ -171,13 +180,15 @@ class SabbathGame{
   if(!this.markers.has('powder')&&this.barrels.some(b=>b.phase==='idle'&&Math.abs(b.x-this.player.x)<260)&&!this.enemies.some(e=>!e.dead&&Math.abs(e.x-this.player.x)<160)){this.markers.add('powder');this.emit('caption','ПОРОХ: ударь и отойди. Присед + кортик — поджечь издали.');}
  }
  tickProjectiles(dt){
-  const p=this.player;for(const s of this.projectiles){if(s.dead)continue;const old=s.x,oldZ=s.z;s.x+=s.vx*dt;s.life-=dt;if(s.kind==='dagger'){s.z+=s.vz*dt;s.vz-=380*dt;}
-   const targets=[],dx=s.x-old;
-   const add=(kind,target,radius,vertical)=>{const x=target.x;if(x<Math.min(old,s.x)-radius||x>Math.max(old,s.x)+radius)return;const t=dx?clamp((x-Math.sign(dx)*radius-old)/dx,0,1):0,z=oldZ+(s.z-oldZ)*t;if(vertical(z)&&!(s.kind==='dagger'&&z<6))targets.push({kind,target,t});};
-   if(s.friendly){for(const e of this.enemies)if(!e.dead&&e.phase!=='buried'&&!(e.phase==='emerge'&&e.timer>.65))add('enemy',e,20,z=>z<(e.heavy?160:e.type==='crawler'?82:140));}
-   else add('player',p,19,z=>s.kind==='wave'?p.z<35:Math.abs(z-(p.z+(p.crouching?26:52)))<(p.crouching?26:39));
-   if(s.kind!=='wave')for(const b of this.barrels)if(b.phase==='idle'||b.phase==='fuse')add('barrel',b,b.halfWidth,z=>z>=0&&z<=b.height);
-   targets.sort((a,b)=>a.t-b.t||(a.kind==='barrel'?-1:b.kind==='barrel'?1:0));const hit=targets[0];
+  if(dt<=0)return;
+  const p=this.player;for(const s of this.projectiles){if(s.dead)continue;const step=Math.min(dt,Math.max(0,s.life));if(step===0||s.kind==='dagger'&&s.z<6){s.dead=true;continue;}const old=s.x,oldZ=s.z;s.x+=s.vx*step;s.life-=dt;if(s.kind==='dagger'){s.z+=s.vz*step-190*step*step;s.vz-=380*step;}
+   const targets=[];
+   const add=(kind,target,radius,bottom,top)=>{const t=segmentEntry(old,oldZ,s.x,s.z,target.x-radius,target.x+radius,Math.max(bottom,s.kind==='dagger'?6:-Infinity),top);if(t!==null)targets.push({kind,target,t});};
+   if(s.friendly){for(const e of this.enemies)if(!e.dead&&e.phase!=='buried'&&!(e.phase==='emerge'&&e.timer>.65))add('enemy',e,20,0,e.heavy?160:e.type==='crawler'?82:140);}
+   else if(s.kind==='wave'){if(p.z<35)add('player',p,19,-Infinity,Infinity);}
+   else{const center=p.z+(p.crouching?26:52),half=p.crouching?26:39;add('player',p,19,center-half,center+half);}
+   if(s.kind!=='wave')for(const b of this.barrels)if(b.phase==='idle'||b.phase==='fuse')add('barrel',b,b.halfWidth,0,b.height);
+   targets.sort((a,b)=>a.t-b.t||Number(a.kind!=='barrel')-Number(b.kind!=='barrel'));const hit=targets[0];
    if(hit){s.dead=true;if(hit.kind==='barrel')this.armBarrel(hit.target,'shot');else if(hit.kind==='player')this.hurt(s.damage);else{if(s.kind==='dagger')this.stats.knifeHits++;this.damageEnemy(hit.target,s.damage,{stagger:true});this.emit('reflectedHit',hit.target.x);}}
    if(s.life<=0||s.kind==='dagger'&&s.z<6)s.dead=true;
   }this.projectiles=this.projectiles.filter(s=>!s.dead);
