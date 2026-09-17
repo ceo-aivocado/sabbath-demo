@@ -121,7 +121,7 @@ body[data-scene="house"] #move-pad{pointer-events:none}
 body[data-scene="house"] #test-heal{display:none}
 </style></head>
 <body><script>
-window.SABBATH_BUILD={release:"v33"};
+window.SABBATH_BUILD={release:"v34"};
 if(location.pathname.endsWith('/desktop.html')){
  document.body.classList.add('desktop');document.title='Sabbath Desktop';
  document.querySelector('link[rel="manifest"]').setAttribute('href','desktop.webmanifest');
@@ -713,7 +713,7 @@ $('stage').addEventListener('dblclick',e=>e.preventDefault());
 $('touch').addEventListener('touchend',e=>e.preventDefault(),{passive:false});
 // Keep keyboard, action-button fingers, and the eight-way movement pad separate.
 const touchPointers=new Map(),padPointers=new Map(),movePad=$('move-pad');
-let lastBackTap=null;
+let lastBackTap=null,mouseAttack=false;
 function beginBackTap(direction){
  const now=performance.now(),p=game.player,previous=lastBackTap;lastBackTap=null;
  if(game.mode!=='playing'||p.z>0||p.vz>0||p.evade>0)return null;
@@ -725,10 +725,10 @@ function beginBackTap(direction){
  return direction===-p.face?{direction,face:p.face,startedAt:now}:null;
 }
 function finishBackTap(tap){if(tap&&performance.now()-tap.startedAt<=200)lastBackTap={...tap,releasedAt:performance.now()}}
-function inputHeld(key){return keys.has(key)||[...touchPointers.values()].includes(key)||[...padPointers.values()].some(p=>p.keys.includes(key))}
+function inputHeld(key){return (key==='j'&&mouseAttack)||keys.has(key)||[...touchPointers.values()].includes(key)||[...padPointers.values()].some(p=>p.keys.includes(key))}
 function paintHeld(){for(const b of document.querySelectorAll('[data-key]'))b.classList.toggle('held',inputHeld(b.dataset.key));movePad.classList.toggle('active',padPointers.size>0)}
 function releasePointer(id,completed=false){const state=padPointers.get(id);if(completed&&!state?.sliding)finishBackTap(state?.backTap);touchPointers.delete(id);padPointers.delete(id);paintHeld()}
-function clearTouch(){keyboardTaps.clear();lastBackTap=null;crouchToggle=false;touchPointers.clear();padPointers.clear();paintHeld()}
+function clearTouch(){mouseAttack=false;keyboardTaps.clear();lastBackTap=null;crouchToggle=false;touchPointers.clear();padPointers.clear();paintHeld()}
 const padSectors=[['d'],['d','x'],['x'],['a','x'],['a'],['a',' '],[' '],['d',' ']];
 function padSectorAt(x,y,previous=null){
  const r=movePad.getBoundingClientRect(),dx=x-r.x-r.width/2,dy=y-r.y-r.height/2;
@@ -753,9 +753,10 @@ movePad.addEventListener('contextmenu',e=>e.preventDefault());
 movePad.addEventListener('pointerdown',e=>{e.preventDefault();if(!['playing','house'].includes(game.mode)||e.pointerType==='mouse'&&e.button!==0)return;movePad.setPointerCapture(e.pointerId);padPointers.set(e.pointerId,{keys:[],sector:null,sliding:false});updatePad(e,true)});
 movePad.addEventListener('pointermove',e=>{if(!padPointers.has(e.pointerId))return;e.preventDefault();updatePad(e)});
 movePad.addEventListener('lostpointercapture',e=>{if(padPointers.has(e.pointerId)){crouchToggle=false;lastBackTap=null;}releasePointer(e.pointerId)});
-canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===0){press('j',false);canvas.focus()}});
-window.addEventListener('pointerup',e=>{if(e.pointerType==='mouse'&&!touchPointers.has(e.pointerId)&&!padPointers.has(e.pointerId))keys.delete('j');releasePointer(e.pointerId,true)});
-window.addEventListener('pointercancel',e=>{if(padPointers.has(e.pointerId)){crouchToggle=false;lastBackTap=null;}releasePointer(e.pointerId)});
+canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===0){mouseAttack=true;canvas.setPointerCapture(e.pointerId);press('j',false,false);canvas.focus()}});
+window.addEventListener('pointerup',e=>{if(e.pointerType==='mouse'&&e.button===0)mouseAttack=false;releasePointer(e.pointerId,true)});
+canvas.addEventListener('lostpointercapture',e=>{if(e.pointerType==='mouse')mouseAttack=false});
+window.addEventListener('pointercancel',e=>{if(e.pointerType==='mouse')mouseAttack=false;if(padPointers.has(e.pointerId)){crouchToggle=false;lastBackTap=null;}releasePointer(e.pointerId)});
 window.addEventListener('blur',clearTouch);
 for(const b of document.querySelectorAll('#touch > button')){b.addEventListener('contextmenu',e=>e.preventDefault());b.addEventListener('pointerdown',e=>{e.preventDefault();if(!['playing','house'].includes(game.mode))return;b.setPointerCapture(e.pointerId);touchPointers.set(e.pointerId,b.dataset.key);paintHeld();press(b.dataset.key,false,false)});b.addEventListener('lostpointercapture',e=>releasePointer(e.pointerId))}
 const propBoxes=[[0,0,510,550],[520,210,555,340],[1045,55,490,490],[0,742,535,270],[540,565,535,437],[1105,600,430,412]],propBounds=[];
