@@ -126,3 +126,5 @@ body[data-scene="house"] #test-heal{display:none}
  #menu #endcopy{font-size:11px;margin-bottom:8px}
  #menu #sound{margin-top:8px}#menu .secondary{margin-top:6px}
 }
+
+#scene-loading{z-index:12;background:#081019e8}#scene-loading>div{width:min(480px,90%)}#scene-load-copy{font:13px/1.5 Arial}#scene-load-meter{height:3px;margin:16px auto;background:#dac28a22;overflow:hidden}#scene-load-fill{display:block;height:100%;width:0;background:#b99960}#scene-loading:not([hidden]) ~ #touch{display:none!important}

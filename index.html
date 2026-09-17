@@ -127,9 +127,11 @@ body[data-scene="house"] #test-heal{display:none}
  #menu #endcopy{font-size:11px;margin-bottom:8px}
  #menu #sound{margin-top:8px}#menu .secondary{margin-top:6px}
 }
+
+#scene-loading{z-index:12;background:#081019e8}#scene-loading>div{width:min(480px,90%)}#scene-load-copy{font:13px/1.5 Arial}#scene-load-meter{height:3px;margin:16px auto;background:#dac28a22;overflow:hidden}#scene-load-fill{display:block;height:100%;width:0;background:#b99960}#scene-loading:not([hidden]) ~ #touch{display:none!important}
 </style></head>
 <body><script>
-window.SABBATH_BUILD={release:"v36"};
+window.SABBATH_BUILD={release:"v37"};
 if(location.pathname.endsWith('/desktop.html')){
  document.body.classList.add('desktop');document.title='Sabbath Desktop';
  document.querySelector('link[rel="manifest"]').setAttribute('href','desktop.webmanifest');
@@ -139,6 +141,7 @@ if(location.pathname.endsWith('/desktop.html')){
 <div id="hud" hidden><div class="vitals"><div class="name">ЯРОМІР <span id="hptext">100</span></div><div class="bar"><i id="health"></i></div><div class="bar nav"><i id="power"></i></div><small id="powertext">НАВЬ · D</small></div><div class="objective"><span id="area">ПРИСТАНЬ</span><strong id="kills">0 <em>/ 10</em></strong><small>УПЫРЕЙ УНИЧТОЖЕНО</small></div><div id="boss-hud" hidden><span id="boss-name">СОТНИК СТОРОЖИ</span><div><i id="boss-health"></i></div></div><button id="test-heal" aria-label="Восстановить здоровье для теста (H)" title="Хилка для теста · H"><span aria-hidden="true">+</span><small>ХИЛКА</small></button><button id="pause" aria-label="Пауза">Ⅱ</button></div>
 <div id="story-copy" hidden><div id="story-title"></div><p id="story-text"></p></div><button id="interact-hint" hidden></button><div id="caption" role="status"></div><div id="toast" role="status"></div>
 <div class="overlay" id="intro"><div class="intro-copy"><div class="eyebrow">ПОЛТАВСКАЯ СЛОБОДА · ПОСЛЕ НАБЕГА</div><h1>Пепел<br>у переправы</h1><p>Река принесла его домой.<br>Тишина встретила первой.</p><p class="brief">Пройди к дому через разорённую слободу.<br>Пять боевых глав: от переправы до Сторожи.<br>Пустой дом, мокрые сёла, сгоревший скит.</p><button class="primary" id="start" disabled>ЗАГРУЗКА · 0%</button><div id="load-status" role="status" aria-live="polite"><span id="load-copy">Готовим сцену…</span><div id="load-meter" role="progressbar" aria-label="Подготовка сцены" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="load-fill"></i></div></div><button id="fresh-start" class="secondary" hidden>НОВАЯ ИГРА</button><div class="keys-preview">← → — идти <b>·</b> S — сабля <b>·</b> Shift — рывок <b>·</b> ↓+Shift / Q — отскок<br>Пробел / ↑ — прыжок <b>·</b> ↓ — присесть <b>·</b> D — Навь <b>·</b> A — кортик <b>·</b> H — хилка (тест)</div></div><nav class="edition-links" aria-label="Вариант управления"><a href="mobile.html">Sabbath Mobile</a><span>·</span><a href="desktop.html">Sabbath Desktop</a></nav><div class="intro-note">СИЛА ИМЕЕТ ЦЕНУ <span>✦</span></div></div>
+<div class="overlay center" id="scene-loading" hidden><div><div class="eyebrow">ДОРОГА ПРОДОЛЖАЕТСЯ</div><h2>За следующим поворотом</h2><p id="scene-load-copy" role="status">Готовим участок…</p><div id="scene-load-meter" role="progressbar" aria-label="Подготовка следующего участка" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="scene-load-fill"></i></div><button class="primary" id="scene-retry" hidden>ПОВТОРИТЬ ЗАГРУЗКУ</button></div></div>
 <div class="overlay center" id="menu" hidden><div><div class="eyebrow" id="endlabel">ПАУЗА</div><h2 id="endtitle">Тишина между ударами</h2><p id="endcopy"></p><button class="primary" id="continue-level" hidden>ПРОДОЛЖИТЬ ПУТЬ →</button><button class="primary" id="resume">ПРОДОЛЖИТЬ</button><button id="sound" aria-label="Включить звук">ЗВУК: ВЫКЛ</button><button class="secondary" id="update-game" hidden>ОБНОВИТЬ ИГРУ</button><small id="update-status" role="status" hidden></small><button class="secondary" id="new-run" hidden>С ПЕРЕПРАВЫ ЗАНОВО</button><button class="secondary" id="restart">НАЧАТЬ ЗАНОВО</button></div></div>
 <div id="touch" aria-label="Сенсорное управление"><div id="move-pad" role="group" aria-label="Крестовина движения: диагонали совмещают действия"><button aria-label="Идти влево" data-key="a">←</button><button aria-label="Прыжок" data-key=" ">↑</button><button aria-label="Идти вправо" data-key="d">→</button><button data-key="x" aria-label="Приседание — переключить" aria-pressed="false">↓</button></div><button data-key="v" aria-label="Бросить кортик">КОРТИК 3</button><button data-key="Shift">РЫВОК</button><button data-key="j">САБЛЯ</button><button data-key="e">НАВЬ</button></div>
 </section><footer><span><kbd>←</kbd><kbd>→</kbd> движение</span><span><kbd>Пробел</kbd> прыжок</span><span><kbd>S</kbd> сабля</span><span><kbd>Shift</kbd> рывок</span><span><kbd>D</kbd> Навь</span><span><kbd>Esc</kbd> пауза</span><div>ПЯТЬ ДОРОГ. ОДНА ПРОПАВШАЯ СЕМЬЯ.</div></footer><div id="rotate-hint"><div class="rotate-brand">SABBATH</div><div class="rotate-subtitle">Пепел у переправы</div><div class="rotate-symbol" aria-hidden="true">↻</div><p>Поверните телефон горизонтально</p></div></main><script>/* Five playable episodes; the house is a separate interlude after episode one. */
@@ -599,6 +602,80 @@ const SabbathWaves=(()=>{
 })();
 if(typeof module!=='undefined'&&module.exports)module.exports=SabbathWaves;
 </script><script>'use strict';
+// One bounded queue for both the current scene and background preparation.
+class SabbathAssets {
+ constructor({assets,info={},art={},onProgress=()=>{},cacheName=null}){
+  this.assets=assets;this.info=info;this.art=art;this.onProgress=onProgress;this.cacheName=cacheName;
+  this.entries=new Map(Object.keys(assets).map(key=>[key,{key,status:'idle',bytes:0,priority:1,order:0,retry:false}]));
+  this.active=0;this.order=0;this.waiters=[];
+ }
+ has(keys){return keys.every(key=>!!this.art[key])}
+ snapshot(keys=Object.keys(this.assets)){
+  const entries=keys.map(key=>this.entries.get(key));
+  return {loaded:entries.filter(e=>!!this.art[e.key]).length,total:entries.length,
+   bytes:entries.reduce((n,e)=>n+e.bytes,0),totalBytes:entries.reduce((n,e)=>n+(this.info[e.key]?.bytes||0),0),
+   failed:entries.filter(e=>e.status==='failed').map(e=>e.key),complete:this.has(keys)};
+ }
+ require(keys,{priority=0,retry=false}={}){
+  keys=[...new Set(keys)];for(const key of keys){
+   const entry=this.entries.get(key);if(!entry)throw new Error('Unknown image: '+key);
+   if(this.art[key])continue;
+   if(entry.status==='idle'||entry.status==='failed'&&retry){entry.retry=entry.status==='failed';entry.status='queued';entry.priority=priority;entry.order=this.order++;entry.bytes=0;}
+   else if(['queued','loading'].includes(entry.status))entry.priority=Math.min(priority,entry.priority);
+  }
+  const promise=new Promise(resolve=>this.waiters.push({keys,resolve}));
+  // An unrelated stalled prefetch must not occupy both slots while the player
+  // explicitly waits for a scene. Deferred files return to the background queue.
+  if(priority===0)for(const entry of this.entries.values()){
+   if(this.active<2||!keys.some(key=>this.entries.get(key).status==='queued'))break;
+   if(entry.status==='loading'&&entry.priority>0&&entry.networkPending)entry.cancel?.(true);
+  }
+  this.pump();this.changed();return promise;
+ }
+ changed(){
+  this.onProgress();
+  const waiting=[];for(const group of this.waiters){
+   if(group.keys.every(key=>['ready','failed'].includes(this.entries.get(key).status)))group.resolve(this.snapshot(group.keys));else waiting.push(group);
+  }this.waiters=waiting;
+ }
+ pump(){
+  while(this.active<2){
+   const entry=[...this.entries.values()].filter(e=>e.status==='queued').sort((a,b)=>a.priority-b.priority||a.order-b.order)[0];
+   if(!entry)return;entry.status='loading';this.active++;this.load(entry);
+  }
+ }
+ load(entry){
+  const key=entry.key,url=this.assets[key],info=this.info[key],image=new Image(),abort=new AbortController();
+  let done=false,objectUrl=null,deadline;entry.networkPending=true;
+  const progress=()=>{if(done)return;clearTimeout(deadline);deadline=setTimeout(()=>finish(false),20000);this.changed()};
+  const finish=(ok,deferred=false)=>{
+   if(done)return;done=true;clearTimeout(deadline);image.onload=image.onerror=null;
+   if(ok){this.art[key]=image;entry.status='ready';if(key==='bg')document.documentElement.style.setProperty('--scene-background',`url("${image.src}")`)}
+   else{entry.status=deferred?'queued':'failed';entry.bytes=0;if(deferred)entry.order=this.order++;abort.abort();image.removeAttribute('src')}
+   if(objectUrl&&(!ok||key!=='bg'))URL.revokeObjectURL(objectUrl);
+   this.active--;this.changed();this.pump();
+  };
+  entry.cancel=deferred=>finish(false,deferred);image.onload=()=>finish(image.naturalWidth>0);image.onerror=()=>finish(false);progress();
+  if(!info){try{image.src=url}catch{finish(false)}return}
+  (async()=>{
+   const response=await fetch(url,{signal:abort.signal,cache:entry.retry?'reload':'force-cache'});
+   if(!response.ok)throw new Error('Image unavailable');
+   const chunks=[];let size=0;
+   if(response.body){const reader=response.body.getReader();try{for(;;){const {done:ended,value}=await reader.read();if(ended)break;size+=value.byteLength;if(size>info.bytes)throw new Error('Image size mismatch');chunks.push(value);entry.bytes=size;progress()}}finally{reader.releaseLock()}}
+   else{const data=await response.arrayBuffer();size=data.byteLength;chunks.push(data);entry.bytes=size;progress()}
+   entry.networkPending=false;if(size!==info.bytes)throw new Error('Image size mismatch');
+   const blob=new Blob(chunks,{type:info.mime});chunks.length=0;
+   const digest=await crypto.subtle.digest('SHA-256',await blob.arrayBuffer());
+   const hash=[...new Uint8Array(digest)].map(n=>n.toString(16).padStart(2,'0')).join('');
+   if(hash!==info.sha256)throw new Error('Image checksum mismatch');if(done)return;
+   // Only verified bytes enter the release cache; storage failures are optional.
+   if(this.cacheName&&'caches' in globalThis){try{const cache=await caches.open(this.cacheName);if(entry.retry||!await cache.match(url))await cache.put(url,new Response(blob,{headers:{'Content-Type':info.mime,'Content-Length':String(size)}}))}catch{}}
+   if(done)return;objectUrl=URL.createObjectURL(blob);image.src=objectUrl;
+  })().catch(()=>finish(false));
+ }
+}
+if(typeof module!=='undefined'&&module.exports)module.exports={SabbathAssets};
+</script><script>'use strict';
 const $=id=>document.getElementById(id),canvas=$('game'),ctx=canvas.getContext('2d'),game=new SabbathGame();
 let W=960;
 const H=540,G=440,keys=new Set(),art={},particles=[],ghosts=[];
@@ -614,60 +691,66 @@ const assets={hit:'content/96ae998a4e651a5a123b3b483a1d916471f86f58bf0c1bf5749b1
 // The web builder fills this with immutable URLs, byte counts and SHA-256 hashes.
 // Standalone/file builds keep native Image loading and need no Fetch/CacheStorage.
 const assetInfo={"hit":{"url":"content/96ae998a4e651a5a123b3b483a1d916471f86f58bf0c1bf5749b1262b2b3c959.png","bytes":1265860,"sha256":"96ae998a4e651a5a123b3b483a1d916471f86f58bf0c1bf5749b1262b2b3c959","mime":"image/png"},"gunnerMelee":{"url":"content/41e3a314552071dca3cf2ee6cb835e96a2ff3355d43e8dce3e6fcb1e2a5bcb7b.png","bytes":1180368,"sha256":"41e3a314552071dca3cf2ee6cb835e96a2ff3355d43e8dce3e6fcb1e2a5bcb7b","mime":"image/png"},"dodge":{"url":"content/81779ce22f52449dbfebb76fc9243c5af700dc816e0fb81ba934303895cd232f.png","bytes":1018055,"sha256":"81779ce22f52449dbfebb76fc9243c5af700dc816e0fb81ba934303895cd232f","mime":"image/png"},"demonDodge":{"url":"content/bbac0f972c78cd5f29af4c3052a5a1c29aa959c637bb8aae757e4a641f98a661.png","bytes":1281112,"sha256":"bbac0f972c78cd5f29af4c3052a5a1c29aa959c637bb8aae757e4a641f98a661","mime":"image/png"},"enemyWalk":{"url":"content/a8ab782ae72d0ded58410eeef3ec17fa969e2a7409780081ab752d92c0a9de16.png","bytes":1719571,"sha256":"a8ab782ae72d0ded58410eeef3ec17fa969e2a7409780081ab752d92c0a9de16","mime":"image/png"},"enemyCombat":{"url":"content/1d0cc42de38110e491418d0f6c573d8d759385a0b996b1c841585832ba26f923.png","bytes":1565464,"sha256":"1d0cc42de38110e491418d0f6c573d8d759385a0b996b1c841585832ba26f923","mime":"image/png"},"crouchWalk":{"url":"content/90cdd35e1100c8cac072a2c981cc48bfb2e5d5a6d03afb87ae0d6660cf48e090.png","bytes":1052246,"sha256":"90cdd35e1100c8cac072a2c981cc48bfb2e5d5a6d03afb87ae0d6660cf48e090","mime":"image/png"},"air":{"url":"content/7ecebbbd897ab0fd7f8baf71753d2188d8657adf66939bf260dad92e7259df68.png","bytes":1217830,"sha256":"7ecebbbd897ab0fd7f8baf71753d2188d8657adf66939bf260dad92e7259df68","mime":"image/png"},"guardWalk":{"url":"content/af744d453c4bc9d73b8cb3419460e7ebe884fa81440c4cdb50533abcd596c4ef.png","bytes":1083937,"sha256":"af744d453c4bc9d73b8cb3419460e7ebe884fa81440c4cdb50533abcd596c4ef","mime":"image/png"},"guardReady":{"url":"content/f63f7e2647bc723885e8e3a18fa9f20b514d8aa9b6d62267b13194eb2d332ca9.png","bytes":1110411,"sha256":"f63f7e2647bc723885e8e3a18fa9f20b514d8aa9b6d62267b13194eb2d332ca9","mime":"image/png"},"villages":{"url":"content/00aa3a84d6472b70f9df093de0a5a4cc053b49a98a14769852535ba308e3668c.webp","bytes":1922542,"sha256":"00aa3a84d6472b70f9df093de0a5a4cc053b49a98a14769852535ba308e3668c","mime":"image/webp"},"skit":{"url":"content/6af3d72e657f68cae0f57f3ad1b42b457f92fff967202951c575ab4007ee5b62.webp","bytes":1879762,"sha256":"6af3d72e657f68cae0f57f3ad1b42b457f92fff967202951c575ab4007ee5b62","mime":"image/webp"},"fortress":{"url":"content/54be13ada041ddf72a278ea0e4d594c27122474cf5e6f8dad311fc8818a71b58.webp","bytes":2104482,"sha256":"54be13ada041ddf72a278ea0e4d594c27122474cf5e6f8dad311fc8818a71b58","mime":"image/webp"},"guards":{"url":"content/0ff55e79d74d291b3b50bcb9337bfc6af01de82e8f9768b92dffc7b8c8ec8f6f.png","bytes":925979,"sha256":"0ff55e79d74d291b3b50bcb9337bfc6af01de82e8f9768b92dffc7b8c8ec8f6f","mime":"image/png"},"house":{"url":"content/2983f8f1cc7ace94f44133f5265a963e9bb32a350fd5c57cd5dada8f08389908.webp","bytes":1957966,"sha256":"2983f8f1cc7ace94f44133f5265a963e9bb32a350fd5c57cd5dada8f08389908","mime":"image/webp"},"sich":{"url":"content/0f1c271086363ac33ace82bc6a1501c0c1a2fe3512e2e72e1730c775d9d5b6a1.webp","bytes":2146786,"sha256":"0f1c271086363ac33ace82bc6a1501c0c1a2fe3512e2e72e1730c775d9d5b6a1","mime":"image/webp"},"gunner":{"url":"content/7807edd137564ec1d9d1ed22e72b9f8ce3e58a7f42452550a0394f58383dcff9.png","bytes":1286560,"sha256":"7807edd137564ec1d9d1ed22e72b9f8ce3e58a7f42452550a0394f58383dcff9","mime":"image/png"},"throw":{"url":"content/8d8c2a8a0ad16fbf654cc54cf6330461374c6afd5e0564e09363fcc0af8b6157.png","bytes":1483460,"sha256":"8d8c2a8a0ad16fbf654cc54cf6330461374c6afd5e0564e09363fcc0af8b6157","mime":"image/png"},"crouch":{"url":"content/7c0c1b751ac2ebdec6cd9d75ed28396dc0df94f4c17ea88ce027a80bd6be517f.png","bytes":1078866,"sha256":"7c0c1b751ac2ebdec6cd9d75ed28396dc0df94f4c17ea88ce027a80bd6be517f","mime":"image/png"},"demonWalk":{"url":"content/5f5405e92383d7bb500528b144dc0d0a7760ff204929e84424a9ec123d8e6863.png","bytes":1410755,"sha256":"5f5405e92383d7bb500528b144dc0d0a7760ff204929e84424a9ec123d8e6863","mime":"image/png"},"walk":{"url":"content/0393a35c4d095d2ab3480042535eb46208bc2bcc71fa65cfce4c933c22cbbf38.png","bytes":1095064,"sha256":"0393a35c4d095d2ab3480042535eb46208bc2bcc71fa65cfce4c933c22cbbf38","mime":"image/png"},"hero":{"url":"content/2ce65247ae0df533e2cd53e744627b21837233852d4e20997124babdcd3a3fc6.png","bytes":1073123,"sha256":"2ce65247ae0df533e2cd53e744627b21837233852d4e20997124babdcd3a3fc6","mime":"image/png"},"demon":{"url":"content/83377dd3e9ea0c61016abaf720c2d840e1538685109041c194aaa321da0dd4ad.png","bytes":1477739,"sha256":"83377dd3e9ea0c61016abaf720c2d840e1538685109041c194aaa321da0dd4ad","mime":"image/png"},"special":{"url":"content/7b9c9f47e36bcd6f97438f46f474a7e77fa7e29857b28c65b31335e036d0f9ea.png","bytes":2047296,"sha256":"7b9c9f47e36bcd6f97438f46f474a7e77fa7e29857b28c65b31335e036d0f9ea","mime":"image/png"},"powder":{"url":"content/9828cbb7bec3121b1ba50d7e7970081aca493d1476b0a34e930e42008dbf3865.png","bytes":915590,"sha256":"9828cbb7bec3121b1ba50d7e7970081aca493d1476b0a34e930e42008dbf3865","mime":"image/png"},"bg":{"url":"content/ed0544b09ea7a205e4e5fda9999f0d28450eee388caedb499350c7f1792d451e.webp","bytes":2134726,"sha256":"ed0544b09ea7a205e4e5fda9999f0d28450eee388caedb499350c7f1792d451e","mime":"image/webp"},"props":{"url":"content/e3b9371839990d7984c1309f528a46e13c3fd942c06a3ed79722f4416112de43.png","bytes":2262327,"sha256":"e3b9371839990d7984c1309f528a46e13c3fd942c06a3ed79722f4416112de43","mime":"image/png"}};
-const received={};
-const loading={phase:'idle',loaded:0,total:Object.keys(assets).length,failed:[],bytes:0,totalBytes:Object.values(assetInfo).reduce((n,item)=>n+item.bytes,0)};
-let loadGeneration=0;
+const PLAYER_ASSETS=['hero','demon','walk','demonWalk','dodge','demonDodge','hit','air','throw','crouch','crouchWalk'];
+function sceneAssets(scene){
+ if(scene==='house')return ['bg','hero','walk','house'];
+ const level=SabbathChapters.find(level=>level?.scene===scene)||SabbathChapters[1],types=new Set(level.types);
+ const needed=['bg',...(scene==='riverside'?['props']:[scene]),...PLAYER_ASSETS];
+ if(types.has('cutter')||types.has('heavy'))needed.push('enemyWalk','enemyCombat');
+ if(['cutter','heavy','crawler','spitter'].some(type=>types.has(type)))needed.push('special');
+ if(types.has('gunner'))needed.push('gunner','gunnerMelee');
+ if(types.has('lancer')||types.has('captain'))needed.push('guards','guardWalk','guardReady');
+ if(level.barrels?.length)needed.push('powder');return [...new Set(needed)];
+}
+const loading={phase:'idle',scene:savedCheckpoint?.scene||'riverside',catalogSettled:false};
+let requiredAssets=sceneAssets(loading.scene),sceneLoad=null,warming=null;
+const catalog=new SabbathAssets({assets,info:assetInfo,art,onProgress:loadingProgress,
+ cacheName:window.SABBATH_BUILD?'sabbath-mobile@'+new URL('./',location.href).pathname+':'+window.SABBATH_BUILD.release:null});
 function loadingProgress(){
- loading.loaded=Object.keys(art).length;loading.bytes=Object.values(received).reduce((n,bytes)=>n+bytes,0);
- const percent=loading.totalBytes?Math.min(99,Math.floor(100*loading.bytes/loading.totalBytes)):Math.round(100*loading.loaded/loading.total);
- $('start').textContent='ЗАГРУЗКА · '+percent+'%';$('load-fill').style.width=percent+'%';$('load-meter').setAttribute('aria-valuenow',String(percent));
+ const all=catalog.snapshot(),required=catalog.snapshot(requiredAssets);
+ Object.assign(loading,all,{failed:required.failed,backgroundFailed:all.failed.filter(key=>!requiredAssets.includes(key)),required:[...requiredAssets],requiredLoaded:required.loaded,requiredTotal:required.total,requiredBytes:required.bytes,requiredTotalBytes:required.totalBytes});
+ if(loading.phase!=='loading')return;
+ const percent=required.totalBytes?Math.min(99,Math.floor(100*required.bytes/required.totalBytes)):Math.round(100*required.loaded/required.total);
+ const prefix=sceneLoad?'scene-load':'load';$(prefix+'-fill').style.width=percent+'%';$(prefix+'-meter').setAttribute('aria-valuenow',String(percent));
+ if(!sceneLoad)$('start').textContent='ЗАГРУЗКА · '+percent+'%';
+ else $('scene-load-copy').textContent='Готовим участок · '+percent+'%';
+}
+function catalogSettled(){loading.catalogSettled=true;loadingProgress();window.dispatchEvent(new Event('sabbath:catalogsettled'))}
+function warmAll(retry=false){
+ if(warming)return warming;
+ const order=['house','sich','villages','skit','fortress','riverside'].flatMap(sceneAssets);
+ loading.catalogSettled=false;
+ warming=catalog.require(order,{priority:1,retry}).then(result=>{warming=null;catalogSettled();return result});return warming;
 }
 async function loadAssets(){
- if(loading.phase==='loading'||ready)return;const generation=++loadGeneration,restoreFocus=document.activeElement===$('start'),retry=new Set(loading.failed);let timedOut=false;
- function restoreButtonFocus(){if(restoreFocus&&[document.body,$('start')].includes(document.activeElement))$('start').focus();}
- loading.phase='loading';loading.failed=[];ready=false;$('start').disabled=true;$('fresh-start').hidden=true;$('load-status').hidden=false;$('load-status').classList.remove('failed');$('load-copy').textContent='Готовим сцену…';loadingProgress();
- const priority=['bg','hero','demon'],queue=Object.entries(assets).filter(([key])=>!art[key]).sort(([a],[b])=>(priority.includes(a)?priority.indexOf(a):3)-(priority.includes(b)?priority.indexOf(b):3)),active=new Set();let next=0;
- let deadline;
- function progress(){if(timedOut||generation!==loadGeneration)return;clearTimeout(deadline);deadline=setTimeout(()=>{timedOut=true;for(const cancel of [...active])cancel();},20000);loadingProgress();}
- for(const [key] of queue)received[key]=0;
- progress();
- function one(key,url){return new Promise(resolve=>{
-  const image=new Image(),abort=new AbortController(),info=assetInfo[key];let settled=false,objectUrl=null;
-  function finish(ok){
-   if(settled)return;settled=true;active.delete(cancel);image.onload=image.onerror=null;
-   if(ok&&!timedOut&&generation===loadGeneration){art[key]=image;if(key==='bg')document.documentElement.style.setProperty('--scene-background',`url("${image.src}")`);progress();}
-   else{abort.abort();image.removeAttribute('src');received[key]=0;}
-   // The background URL also backs the portrait splash; other decoded images
-   // retain their bitmap without retaining an extra compressed Blob allocation.
-   if(objectUrl&&(!ok||key!=='bg'))URL.revokeObjectURL(objectUrl);resolve();
-  }
-  const cancel=()=>finish(false);active.add(cancel);image.onload=()=>finish(image.naturalWidth>0);image.onerror=()=>finish(false);
-  if(!info){try{image.src=url}catch{finish(false)}return;}
-  (async()=>{
-   const response=await fetch(url,{signal:abort.signal,cache:retry.has(key)?'reload':'force-cache'});
-   if(!response.ok)throw new Error('Image unavailable');
-   const chunks=[];let size=0;
-   if(response.body){const reader=response.body.getReader();try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>info.bytes)throw new Error('Image size mismatch');chunks.push(value);received[key]=size;progress();}}finally{reader.releaseLock();}}
-   else{const data=await response.arrayBuffer();size=data.byteLength;chunks.push(data);received[key]=size;progress();}
-   if(size!==info.bytes)throw new Error('Image size mismatch');
-   const blob=new Blob(chunks,{type:info.mime});chunks.length=0;
-   const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer()))].map(n=>n.toString(16).padStart(2,'0')).join('');
-   if(hash!==info.sha256)throw new Error('Image checksum mismatch');
-   if(settled||timedOut||generation!==loadGeneration)return;
-   // On first visit the subsequent worker install can reuse these verified bytes.
-   // Cache failure must never block an otherwise playable online session.
-   if(window.SABBATH_BUILD&&'caches' in window){try{const cache=await caches.open('sabbath-mobile@'+new URL('./',location.href).pathname+':'+window.SABBATH_BUILD.release);if(retry.has(key)||!await cache.match(url))await cache.put(url,new Response(blob,{headers:{'Content-Type':info.mime,'Content-Length':String(size)}}));}catch{}}
-   if(settled||timedOut||generation!==loadGeneration)return;
-   objectUrl=URL.createObjectURL(blob);image.src=objectUrl;
-  })().catch(()=>finish(false));
- });}
- async function worker(){while(!timedOut&&next<queue.length&&generation===loadGeneration){const [key,url]=queue[next++];await one(key,url);}}
- await Promise.all([worker(),worker()]);clearTimeout(deadline);if(generation!==loadGeneration)return;
- loading.failed=Object.keys(assets).filter(key=>!art[key]);loading.loaded=Object.keys(art).length;
- if(loading.failed.length){loading.phase='failed';$('start').disabled=false;$('start').textContent='ПОВТОРИТЬ ЗАГРУЗКУ';$('load-status').classList.add('failed');$('load-copy').textContent=timedOut?'Загрузка остановилась. Нажми «Повторить загрузку».':'Не удалось подготовить сцену. Нажми «Повторить загрузку».';restoreButtonFocus();window.dispatchEvent(new Event('sabbath:loadsettled'));return;}
- loading.phase='ready';ready=true;$('load-status').hidden=true;$('start').disabled=false;$('start').textContent=savedCheckpoint?'ПРОДОЛЖИТЬ ПУТЬ':'ВОЙТИ В СЛОБОДУ';$('fresh-start').hidden=!savedCheckpoint;restoreButtonFocus();
- window.dispatchEvent(new Event('sabbath:loadsettled'));
+ if(loading.phase==='loading'||ready)return;
+ const restoreFocus=document.activeElement===$('start');loading.phase='loading';loading.catalogSettled=false;
+ $('start').disabled=true;$('fresh-start').hidden=true;$('load-status').hidden=false;$('load-status').classList.remove('failed');$('load-copy').textContent='Готовим сцену…';
+ const result=await catalog.require(requiredAssets,{retry:true});
+ if(!result.complete){loading.phase='failed';$('start').disabled=false;$('start').textContent='ПОВТОРИТЬ ЗАГРУЗКУ';$('load-status').classList.add('failed');$('load-copy').textContent='Не удалось подготовить сцену. Нажми «Повторить загрузку».';catalogSettled();}
+ else{loading.phase='ready';ready=true;$('load-status').hidden=true;$('start').disabled=false;$('start').textContent=savedCheckpoint?'ПРОДОЛЖИТЬ ПУТЬ':'ВОЙТИ В СЛОБОДУ';$('fresh-start').hidden=!savedCheckpoint;warmAll();}
+ loadingProgress();if(restoreFocus&&[document.body,$('start')].includes(document.activeElement))$('start').focus();window.dispatchEvent(new Event('sabbath:loadsettled'));
 }
+function ensureSceneAssets(){
+ if(!ready||sceneLoad||game.mode==='intro')return;
+ const required=sceneAssets(game.scene);if(catalog.has(required))return;
+ const poster=document.createElement('canvas');poster.width=canvas.width;poster.height=canvas.height;poster.getContext('2d').drawImage(canvas,0,0);
+ sceneLoad={scene:game.scene,mode:game.mode,pauseRequested:document.hidden||phonePortrait(),poster,pending:false};
+ game.mode='loading';clearTouch();keys.clear();$('menu').hidden=true;$('scene-loading').hidden=false;$('story-copy').hidden=true;syncAudio(false);prepareScene();
+}
+async function prepareScene(){
+ const pending=sceneLoad;if(!pending||pending.pending)return;pending.pending=true;
+ requiredAssets=sceneAssets(pending.scene);loading.scene=pending.scene;loading.phase='loading';$('scene-retry').hidden=true;
+ const result=await catalog.require(requiredAssets,{retry:true});if(sceneLoad!==pending)return;
+ pending.pending=false;
+ if(!result.complete){loading.phase='failed';$('scene-load-copy').textContent='Не удалось подготовить участок. Повтори загрузку.';$('scene-retry').hidden=false;loadingProgress();return;}
+ loading.phase='ready';sceneLoad=null;game.mode=pending.mode;clearTouch();keys.clear();$('scene-loading').hidden=true;transition=.45;resetFootsteps();loadingProgress();
+ if((pending.pauseRequested||document.hidden||phonePortrait())&&['playing','house'].includes(game.mode))pause();
+ else if(game.mode==='paused')showMenu('ПАУЗА','Тишина между ударами','Путь дождётся тебя.',true);
+ canvas.focus();syncAudio();
+}
+$('scene-retry').onclick=prepareScene;
+window.addEventListener('online',()=>{if(ready&&!catalog.has(Object.keys(assets)))warmAll(true)});
 const rand=(n)=>{let a=Math.sin(n*127.1+311.7)*43758.5453;return a-Math.floor(a)},clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.ceil(w),Math.ceil(h))}
 function glow(x,y,r,color){const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,color);g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2)}
@@ -677,20 +760,20 @@ function noise(dur,vol,cutoff,pan=0){if(soundOn&&soundscape)soundscape.noise(dur
 function worldPan(x){return clamp((x-game.player.x)/Math.max(320,W*.55),-.75,.75)}
 function resetFootsteps(){const p=game.player;footstep=Math.floor(p.stride/(p.crouching?28:56));footstepCrouched=p.crouching;}
 function soundLabel(){$('sound').textContent='ЗВУК: '+(soundOn?'ВКЛ':'ВЫКЛ');$('sound').setAttribute('aria-label',soundOn?'Выключить звук':'Включить звук');$('sound').setAttribute('aria-pressed',String(soundOn))}
-function syncAudio(allowResume=true){clearTimeout(audioSleep);if(!audio||!soundscape)return;soundscape.setEnabled(soundOn&&!document.hidden);soundscape.setScene(game.scene);soundscape.setMode(game.mode);if(!soundOn||document.hidden){audioSleep=setTimeout(()=>{if(!soundOn||document.hidden)audio.suspend().catch(()=>{})},60);}else if(allowResume)audio.resume().catch(()=>{});}
+function syncAudio(allowResume=true){clearTimeout(audioSleep);if(!audio||!soundscape)return;soundscape.setEnabled(soundOn&&!document.hidden);soundscape.setScene(game.scene);soundscape.setMode(sceneLoad?'paused':game.mode);if(!soundOn||document.hidden){audioSleep=setTimeout(()=>{if(!soundOn||document.hidden)audio.suspend().catch(()=>{})},60);}else if(allowResume)audio.resume().catch(()=>{});}
 function initAudio(){if(!soundOn||document.hidden)return;try{if(!audio){const Context=window.AudioContext||window.webkitAudioContext;audio=new Context();soundscape=new SabbathSound(audio);}syncAudio();}catch{audio?.close().catch(()=>{});audio=null;soundscape=null;soundOn=false;soundLabel();}}
 function soundToggle(){soundOn=!soundOn;try{localStorage.setItem('sabbath-sound',soundOn?'on':'off')}catch{}if(soundOn)initAudio();syncAudio();soundLabel();}
 soundLabel();
 $('sound').onclick=soundToggle;
-function continueJourney(){if(game.advanceChapter()){clearTouch();keys.clear();$('menu').hidden=true;canvas.focus();}}
+function continueJourney(){if(game.advanceChapter()){clearTouch();keys.clear();$('menu').hidden=true;canvas.focus();ensureSceneAssets();}}
 $('continue-level').onclick=continueJourney;
 $('fullscreen').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else $('stage').requestFullscreen?.()};
 function start(fresh=false){if(!ready||phonePortrait())return;clearTouch();if(fresh){savedCheckpoint=null;try{localStorage.removeItem(CHECKPOINT_KEY)}catch{}}
  if(!savedCheckpoint||!game.restoreCheckpoint(savedCheckpoint)){game.reset();game.start();}
- particles.length=0;clearDodgeTrail();keys.clear();captionUntil=toastUntil=0;$('caption').textContent='';$('toast').textContent='';$('intro').hidden=true;$('menu').hidden=true;$('story-copy').hidden=true;$('hud').hidden=false;storyUntil=0;transition=.45;canvas.focus();resetFootsteps();if(soundOn)initAudio();syncAudio();soundLabel();}
+ particles.length=0;clearDodgeTrail();keys.clear();captionUntil=toastUntil=0;$('caption').textContent='';$('toast').textContent='';$('intro').hidden=true;$('menu').hidden=true;$('story-copy').hidden=true;$('hud').hidden=false;storyUntil=0;transition=.45;canvas.focus();resetFootsteps();if(soundOn)initAudio();syncAudio();soundLabel();ensureSceneAssets();}
 $('start').onclick=()=>loading.phase==='failed'?loadAssets():start();$('restart').onclick=()=>start();$('fresh-start').onclick=()=>start(true);$('new-run').onclick=()=>start(true);
 $('interact-hint').onclick=()=>game.interact();
-function pause(){clearTouch();if(['playing','house'].includes(game.mode)){pausedMode=game.mode;game.mode='paused';showMenu('ПАУЗА','Тишина между ударами','Путь дождётся тебя.',true)}else if(game.mode==='paused'){game.mode=pausedMode;$('menu').hidden=true;canvas.focus()}keys.clear();syncAudio()}
+function pause(){clearTouch();if(sceneLoad){sceneLoad.pauseRequested=true;keys.clear();return;}if(['playing','house'].includes(game.mode)){pausedMode=game.mode;game.mode='paused';showMenu('ПАУЗА','Тишина между ударами','Путь дождётся тебя.',true)}else if(game.mode==='paused'){game.mode=pausedMode;$('menu').hidden=true;canvas.focus()}keys.clear();syncAudio()}
 $('pause').onclick=pause;$('resume').onclick=pause;
 function showMenu(label,title,copy,resume=false){$('continue-level').hidden=true;$('restart').hidden=false;$('endlabel').textContent=label;$('endtitle').textContent=title;$('endcopy').textContent=copy;$('resume').hidden=!resume;$('restart').textContent=savedCheckpoint?'С КОНТРОЛЬНОЙ ТОЧКИ':resume?'НАЧАТЬ ЗАНОВО':'ПРОЙТИ ЕЩЁ РАЗ';$('new-run').hidden=!savedCheckpoint;$('menu').hidden=false}
 // Physical keys are independent of the selected keyboard language.
@@ -714,7 +797,7 @@ window.addEventListener('keydown',e=>{
  press(k,e.repeat);
 });
 window.addEventListener('keyup',e=>{keys.delete(keyName(e));finishBackTap(keyboardTaps.get(e.code));keyboardTaps.delete(e.code)});
-window.addEventListener('blur',()=>{keys.clear();if(['playing','house'].includes(game.mode))pause()});document.addEventListener('visibilitychange',()=>{if(document.hidden&&['playing','house'].includes(game.mode))pause();syncAudio(false)});
+window.addEventListener('blur',()=>{keys.clear();if(sceneLoad)sceneLoad.pauseRequested=true;if(['playing','house'].includes(game.mode))pause()});document.addEventListener('visibilitychange',()=>{if(document.hidden&&sceneLoad)sceneLoad.pauseRequested=true;if(document.hidden&&['playing','house'].includes(game.mode))pause();syncAudio(false)});
 // iOS may synthesize zoom gestures independently of pointer events.
 for(const type of ['gesturestart','gesturechange','gestureend'])document.addEventListener(type,e=>e.preventDefault(),{passive:false});
 $('stage').addEventListener('dblclick',e=>e.preventDefault());
@@ -1099,6 +1182,7 @@ function renderHouse(cam,t){
 function phonePortrait(){return !document.body.classList.contains('desktop')&&innerHeight>innerWidth}
 function fitViewport(){
  document.body.classList.toggle('phone-portrait',phonePortrait());
+ if(phonePortrait()&&sceneLoad)sceneLoad.pauseRequested=true;
  if(phonePortrait()&&['playing','house'].includes(game.mode))pause();
  const immersive=innerWidth>=innerHeight;
  const bounds=canvas.getBoundingClientRect();
@@ -1111,7 +1195,7 @@ window.visualViewport?.addEventListener('resize',fitViewport);
 // Orientation CSS settles after the resize event on WebKit. Observe actual canvas layout.
 new ResizeObserver(fitViewport).observe(canvas);
 fitViewport();
-function render(){ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.imageSmoothingEnabled=false;if(!ready){rect(0,0,W,H,'#0c141f');if(art.bg){const bg=backgroundLayout(100);ctx.drawImage(art.bg,Math.round(bg.x),Math.round(bg.y),bg.width,bg.height);}return;}ctx.save();const intro=game.mode==='intro',cam=intro?Math.sin(clock*.035)*60+100:game.cam;let shake=game.mode==='playing'?game.shake:0;ctx.translate((rand(clock)*2-1)*shake,(rand(clock+2)*2-1)*shake*.4);renderBackground(cam,clock);renderBarrels(cam,clock);
+function render(){ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.imageSmoothingEnabled=false;if(sceneLoad){ctx.drawImage(sceneLoad.poster,0,0,W,H);return;}if(!ready||game.mode==='intro'){rect(0,0,W,H,'#0c141f');if(art.bg){const bg=backgroundLayout(100);ctx.drawImage(art.bg,Math.round(bg.x),Math.round(bg.y),bg.width,bg.height);}if(ready){const face=game.player.face;game.player.face=-1;hero(0,745,442);game.player.face=face;}return;}ctx.save();const intro=game.mode==='intro',cam=intro?Math.sin(clock*.035)*60+100:game.cam;let shake=game.mode==='playing'?game.shake:0;ctx.translate((rand(clock)*2-1)*shake,(rand(clock+2)*2-1)*shake*.4);renderBackground(cam,clock);renderBarrels(cam,clock);
  if(intro){let prev=game.player.face;game.player.face=-1;hero(0,745,442);game.player.face=prev}else{renderDodgeTrail(game.cam);for(const e of game.enemies)enemy(e);let p=game.player;ctx.save();ctx.globalAlpha=.38;ctx.fillStyle='#000';ctx.beginPath();ctx.ellipse(p.x-game.cam,G+3,28*(game.scene==='house'?2.4*game.houseScale():1),5*(game.scene==='house'?2.4*game.houseScale():1),0,0,7);ctx.fill();ctx.restore();let frame=p.evade>0?(p.evadeKind==='back'?0:7):p.attack>0?(p.airAttack?(p.attack>.25?4:6):(p.counterAttack||game.combo===2)?(p.attack>.25?0:5):game.combo===3?(p.attack>.25?7:6):(p.attack>.25?4:6)):p.z>0?2:p.moving?1+Math.floor(p.stride/14)%3:0;if(game.scene==='house'){
   // Match adult height to the doorway, with the bench at knee height.
   // Indoor staging has its own scale; combat sprites and hitboxes stay unchanged.
@@ -1131,14 +1215,14 @@ function render(){ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.imageSmoot
 }
 function events(){for(const e of game.events.splice(0)){if(e.type==='barrelFuse'){noise(.65,.05,3600,worldPan(e.data.x));tone(620,.09,.03,'triangle',.7,worldPan(e.data.x));}else if(e.type==='barrelBlast'){noise(.34,.20,1400,worldPan(e.data.x));tone(70,.28,.09,'triangle',.35,worldPan(e.data.x));for(let i=0;i<25;i++)particles.push({x:e.data.x+(Math.random()-.5)*20,y:G-25,vx:(Math.random()-.5)*240,vy:-40-Math.random()*175,life:.35+Math.random()*.45,size:2+Math.random()*3,color:['#a7845f','#e4bd79','#5d4a3c'][i%3]});}else if(e.type==='emberWarning'){tone(180,.25,.025,'triangle',1.2);}else if(e.type==='emberBurst'){noise(.3,.15,1600);for(let i=0;i<20;i++)particles.push({x:e.data+(Math.random()-.5)*100,y:G,vx:(Math.random()-.5)*60,vy:-40-Math.random()*60,life:.3+Math.random()*.4,size:2,color:'#e9ad6977'});}else if(e.type==='checkpoint'){saveCheckpoint();}else if(e.type==='house'||e.type==='chapter'){clearTouch();keys.clear();particles.length=0;clearDodgeTrail();transition=.65;soundscape?.setScene(game.scene);resetFootsteps();$('story-copy').hidden=true;storyUntil=0;captionUntil=0;toastUntil=0;tone(e.type==='house'?98:110,.8,.035,'sine',.8);}else if(e.type==='inspect'){captionUntil=0;tone(e.data.id==='drawing'?220:147,.45,.016,'sine',.97);$('story-title').textContent=e.data.title;$('story-text').textContent=e.data.text;$('story-copy').hidden=false;storyUntil=clock+7;}else if(e.type==='gunshot'){noise(.16,.22,2300,worldPan(e.data.x));tone(75,.12,.1,'triangle',.4,worldPan(e.data.x));for(let i=0;i<9;i++)particles.push({x:e.data.x,y:G-e.data.z,vx:e.data.face*(10+Math.random()*45),vy:-8-Math.random()*18,life:.3+Math.random()*.4,size:3+Math.random()*3,color:'#a1988666'});}else if(e.type==='throw'){noise(.1,.1,3000);tone(460,.08,.04,'triangle',.65)}else if(e.type==='rise'){noise(.35,e.data.heavy?.1:.05,300);for(let i=0;i<16;i++)particles.push({x:e.data.x+(Math.random()-.5)*40,y:G,vx:(Math.random()-.5)*60,vy:-Math.random()*70,life:.5+Math.random()*.4,size:2,color:'#6d756177'})}else if(e.type==='warning'){soundscape?.cueEnemy({...e.data,pan:worldPan(e.data.x)})}else if(e.type==='jump'){noise(.08,.04,1300)}else if(e.type==='perfect'){tone(520,.12,.09,'sine',1.5);$('toast').textContent='ТОЧНЫЙ РЫВОК · КОНТРУДАР ГОТОВ';toastUntil=clock+1.4}else if(e.type==='parry'){tone(780,.15,.08,'triangle',1.4)}else if(e.type==='reflectedHit'){noise(.08,.12,1800);tone(320,.12,.06,'triangle',.7)}else if(e.type==='break'){noise(.16,.18,1300);$('toast').textContent='СТОЙКА СЛОМАНА';toastUntil=clock+1.1}else if(e.type==='land'){soundscape?.land(game.scene);for(let i=0;i<5;i++)particles.push({x:e.data+(Math.random()-.5)*22,y:G,vx:(Math.random()-.5)*50,vy:-Math.random()*30,life:.2+Math.random()*.2,size:2,color:'#aa967055'})}else if(e.type==='caption'){$('caption').textContent=e.data;captionUntil=clock+5.5}else if(e.type==='toast'){$('toast').textContent=matchMedia('(pointer: coarse)').matches?e.data.replace('НАЖМИ D','НАЖМИ «НАВЬ»'):e.data;toastUntil=clock+5}else if(e.type==='sparks'){for(let i=0;i<14;i++)particles.push({x:e.data.x,y:G-60,vx:(Math.random()-.5)*180,vy:-50-Math.random()*130,life:.25+Math.random()*.5,size:i%3?2:3,color:['#ead9ac','#c38863','#a56153','#867794'][i%4]})}else if(e.type==='swing'){noise(.12,.15,3400);tone(160,.13,.05,'triangle',.4)}else if(e.type==='hit'){noise(.12,.3,1000);tone(70,.14,.2,'sine',.45)}else if(e.type==='kill'){tone(180,.5,.06,'triangle',.5)}else if(e.type==='hurt'){noise(.18,.22,450);tone(90,.2,.13,'sawtooth',.4)}else if(e.type==='dodge'){noise(.2,.08,1800)}else if(e.type==='power'){$('toast').textContent='';toastUntil=0;tone(110,1.5,.15,'sawtooth',2);tone(82,2,.08)}else if(e.type==='enemyStrike'){if(e.data.heavy){noise(.18,.16,200);game.shake=Math.max(game.shake,2)}}else if(e.type==='dead'){showMenu('ПУТЬ ОБОРВАЛСЯ','Река помнит твоё имя',game.deathAdvice());tone(55,2,.1)}else if(e.type==='won'){if(game.chapter===1){game.enterHouse();}else if(game.chapter<5){saveCheckpoint();showMenu(`ЭПИЗОД ${game.chapter} / 5 ПРОЙДЕН`,game.level.name,game.level.outro);$('continue-level').hidden=false;$('restart').hidden=true;tone(164.81,1,.04);}else{const m=Math.floor(game.time/60),sec=Math.floor(game.time%60).toString().padStart(2,'0');showMenu('ПЯТЬ ДОРОГ ПРОЙДЕНО','Перед дверью Палия',`${game.totalKills+game.kills} теней · ${m}:${sec} · Точных уклонений: ${game.stats.perfectDodges}. Семья не найдена. Внешний двор взят. За дубовой дверью ещё ждёт Палий.`);tone(164.81,2,.06);setTimeout(()=>tone(196,2,.06),300);setTimeout(()=>tone(220,3,.05),700);}}}}
 
-function loop(now){if(phonePortrait()!==document.body.classList.contains('phone-portrait'))fitViewport();const dt=Math.min(.05,(now-last)/1000||0);last=now;if(game.mode!=='paused'){clock+=dt;transition=Math.max(0,transition-dt);}const previousDodge=dodgePose(),trailStart=previousDodge?{x:game.player.x,z:game.player.z,pose:previousDodge}:null;game.tick(dt,{left:inputHeld('a'),right:inputHeld('d'),attack:inputHeld('j'),crouch:inputHeld('x')||crouchToggle});events();if(['playing','house'].includes(game.mode)){for(let i=particles.length-1;i>=0;i--){let p=particles[i];p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=330*dt;if(p.life<=0)particles.splice(i,1)}updateDodgeTrail(dt,trailStart);const p=game.player,step=Math.floor(p.stride/(p.crouching?28:56));if(p.crouching!==footstepCrouched){footstep=step;footstepCrouched=p.crouching;}if(p.moving&&p.z===0&&p.evade===0&&step!==footstep){soundscape?.step(game.scene,p.power>0);for(let j=0;j<2;j++)particles.push({x:p.x-p.face*9,y:G-1,vx:-p.face*(12+Math.random()*15),vy:-12-Math.random()*16,life:.22,size:2,color:'#9a897044'})}footstep=step;}
- if(soundscape){const boss=game.enemies.find(e=>e.type==='captain'&&!e.dead&&Math.abs(e.x-game.player.x)<520);soundscape.update(dt,{scene:game.scene,mode:game.mode,boss:!!boss,enraged:!!boss?.enraged});}
+function loop(now){if(phonePortrait()!==document.body.classList.contains('phone-portrait'))fitViewport();const dt=Math.min(.05,(now-last)/1000||0);last=now;if(!['paused','loading'].includes(game.mode)){clock+=dt;transition=Math.max(0,transition-dt);}const previousDodge=dodgePose(),trailStart=previousDodge?{x:game.player.x,z:game.player.z,pose:previousDodge}:null;ensureSceneAssets();if(!sceneLoad)game.tick(dt,{left:inputHeld('a'),right:inputHeld('d'),attack:inputHeld('j'),crouch:inputHeld('x')||crouchToggle});events();ensureSceneAssets();if(['playing','house'].includes(game.mode)){for(let i=particles.length-1;i>=0;i--){let p=particles[i];p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=330*dt;if(p.life<=0)particles.splice(i,1)}updateDodgeTrail(dt,trailStart);const p=game.player,step=Math.floor(p.stride/(p.crouching?28:56));if(p.crouching!==footstepCrouched){footstep=step;footstepCrouched=p.crouching;}if(p.moving&&p.z===0&&p.evade===0&&step!==footstep){soundscape?.step(game.scene,p.power>0);for(let j=0;j<2;j++)particles.push({x:p.x-p.face*9,y:G-1,vx:-p.face*(12+Math.random()*15),vy:-12-Math.random()*16,life:.22,size:2,color:'#9a897044'})}footstep=step;}
+ if(soundscape){const boss=game.enemies.find(e=>e.type==='captain'&&!e.dead&&Math.abs(e.x-game.player.x)<520);soundscape.update(dt,{scene:game.scene,mode:sceneLoad?'paused':game.mode,boss:!!boss,enraged:!!boss?.enraged});}
  const inHouse=game.scene==='house';if(document.body.dataset.scene!==game.scene)document.body.dataset.scene=game.scene;const focus=inHouse&&game.mode==='house'?game.houseFocus():null;$('interact-hint').hidden=!focus||!$('intro').hidden;$('interact-hint').textContent=focus?(focus.id==='door'?'К СЕЧИ →':(matchMedia('(pointer: coarse)').matches?'':'S · ')+focus.title):'';if(clock>storyUntil||!inHouse)$('story-copy').hidden=true;document.querySelector('[data-key="j"]').textContent=inHouse?'ОСМОТР':'САБЛЯ';
  document.querySelector('[data-key="x"]').classList.toggle('ready',game.player.crouching);document.querySelector('[data-key="x"]').setAttribute('aria-pressed',String(game.player.crouching));const knifeButton=document.querySelector('[data-key="v"]');knifeButton.textContent='КОРТИК '+game.player.knives;knifeButton.style.opacity=game.player.throwCd>0||game.player.knives===0?'.4':'1';document.querySelector('[data-key="Shift"]').style.opacity=game.player.evadeCd>0?'.45':'1';document.querySelector('[data-key="e"]').classList.toggle('ready',game.player.nav>=100||game.player.power>0);
  $('test-heal').disabled=!['playing','house'].includes(game.mode)||game.player.hp<=0||game.player.hp>=game.player.maxHp;
  $('health').style.width=game.player.hp+'%';$('hptext').textContent=Math.ceil(game.player.hp)+(game.player.maxHp<100?'/'+game.player.maxHp:'');$('power').style.width=(game.player.power>0?game.player.power/8*100:game.player.nav)+'%';$('hud').classList.toggle('demonic',game.player.power>0);$('powertext').textContent=game.player.transform>0?'ПРЕВРАЩЕНИЕ':game.player.power>0?'ДЕМОН · '+game.player.power.toFixed(1)+' С':game.player.nav>=100?(document.body.classList.contains('desktop')?'D · НАВЬ':'НАВЬ ГОТОВА')+' / ЦЕНА: 8 МАКС. HP':'НАВЬ · '+Math.floor(game.player.nav)+' / 100';$('kills').innerHTML=game.kills+' <em>/ '+game.enemies.length+'</em>';$('area').textContent=`${game.chapter}/5 · ${game.areaName()}`;const captain=game.enemies.find(e=>e.type==='captain'&&!e.dead);$('boss-hud').hidden=!captain||Math.abs(captain.x-game.player.x)>520||game.mode==='intro';if(captain){$('boss-health').style.width=100*captain.hp/captain.maxHp+'%';$('boss-name').textContent=captain.enraged?'СОТНИК · ЯРОСТЬ':'СОТНИК СТОРОЖИ';}const noticesVisible=$('intro').hidden&&$('menu').hidden;for(const id of ['caption','toast'])$(id).style.visibility=noticesVisible?'visible':'hidden';$('caption').style.opacity=clock<captionUntil?'1':'0';if(clock>toastUntil)$('toast').textContent='';render();requestAnimationFrame(loop)}
 // Read-only state export for reproducible local browser checks.
-window.sabbath={game,keys,ready:()=>ready,loading:()=>({...loading,failed:[...loading.failed]}),render};loadAssets();requestAnimationFrame(loop);
+window.sabbath={game,keys,ready:()=>ready&&!sceneLoad,loading:()=>({...loading,failed:[...(loading.failed||[])]}),prepareOffline:()=>warmAll(true),render};loadAssets();requestAnimationFrame(loop);
 </script><script>if('serviceWorker' in navigator && ['https:','http:'].includes(location.protocol)){
  let hadController=!!navigator.serviceWorker.controller,pending=false,reloading=false,registration,registering=false,manualRunning=false;
  // Pauses and results still belong to this run. Only the visible title is safe
@@ -1171,6 +1255,8 @@ window.sabbath={game,keys,ready:()=>ready,loading:()=>({...loading,failed:[...lo
    if(manualRunning||reloading)return;
    manualRunning=true;updateButton.disabled=true;updateStatus.hidden=false;updateStatus.textContent='Проверяем обновление…';
    try{
+    // Finish this page's shared queue before an installer requests its files.
+    await window.sabbath?.prepareOffline?.();
     const reg=registration||await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});registration=reg;
     // Track the installing worker even if a failed install becomes redundant
     // before update() resolves and disappears from registration.installing.
@@ -1186,11 +1272,11 @@ window.sabbath={game,keys,ready:()=>ready,loading:()=>({...loading,failed:[...lo
    }finally{manualRunning=false}
   });
  }
- // First visit: images are verified and cached by the loader before install.
- // A failed loader still registers so a complete newer release can recover it.
- if(!window.SABBATH_BUILD||['ready','failed'].includes(window.sabbath?.loading().phase))register();
- else window.addEventListener('sabbath:loadsettled',register,{once:true});
- window.addEventListener('pageshow',checkUpdate);window.addEventListener('online',()=>{if(window.sabbath?.loading().phase!=='loading')register();checkUpdate()});
+ // Scene readiness can precede full offline readiness. Register only after
+ // the shared image queue settles; a failed queue can still get a fixed release.
+ if(!window.SABBATH_BUILD||window.sabbath?.loading().catalogSettled)register();
+ else window.addEventListener('sabbath:catalogsettled',register,{once:true});
+ window.addEventListener('pageshow',checkUpdate);window.addEventListener('online',()=>{if(window.sabbath?.loading().catalogSettled)register();checkUpdate()});
  document.addEventListener('visibilitychange',checkUpdate);setInterval(checkUpdate,60000);
 }
 </script></body></html>

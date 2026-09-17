@@ -30,6 +30,8 @@ if('serviceWorker' in navigator && ['https:','http:'].includes(location.protocol
    if(manualRunning||reloading)return;
    manualRunning=true;updateButton.disabled=true;updateStatus.hidden=false;updateStatus.textContent='Проверяем обновление…';
    try{
+    // Finish this page's shared queue before an installer requests its files.
+    await window.sabbath?.prepareOffline?.();
     const reg=registration||await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});registration=reg;
     // Track the installing worker even if a failed install becomes redundant
     // before update() resolves and disappears from registration.installing.
@@ -45,10 +47,10 @@ if('serviceWorker' in navigator && ['https:','http:'].includes(location.protocol
    }finally{manualRunning=false}
   });
  }
- // First visit: images are verified and cached by the loader before install.
- // A failed loader still registers so a complete newer release can recover it.
- if(!window.SABBATH_BUILD||['ready','failed'].includes(window.sabbath?.loading().phase))register();
- else window.addEventListener('sabbath:loadsettled',register,{once:true});
- window.addEventListener('pageshow',checkUpdate);window.addEventListener('online',()=>{if(window.sabbath?.loading().phase!=='loading')register();checkUpdate()});
+ // Scene readiness can precede full offline readiness. Register only after
+ // the shared image queue settles; a failed queue can still get a fixed release.
+ if(!window.SABBATH_BUILD||window.sabbath?.loading().catalogSettled)register();
+ else window.addEventListener('sabbath:catalogsettled',register,{once:true});
+ window.addEventListener('pageshow',checkUpdate);window.addEventListener('online',()=>{if(window.sabbath?.loading().catalogSettled)register();checkUpdate()});
  document.addEventListener('visibilitychange',checkUpdate);setInterval(checkUpdate,60000);
 }
