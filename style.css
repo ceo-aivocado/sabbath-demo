@@ -128,3 +128,7 @@ body[data-scene="house"] #test-heal{display:none}
 }
 
 #scene-loading{z-index:12;background:#081019e8}#scene-loading>div{width:min(480px,90%)}#scene-load-copy{font:13px/1.5 Arial}#scene-load-meter{height:3px;margin:16px auto;background:#dac28a22;overflow:hidden}#scene-load-fill{display:block;height:100%;width:0;background:#b99960}#scene-loading:not([hidden]) ~ #touch{display:none!important}
+
+/* Keep silhouettes readable behind a control without moving its touch target. */
+#touch button.over-character:not(.held){background:#10182712;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;border-color:#d8c59c99;text-shadow:0 1px 3px #000,0 0 5px #000}
+#touch button.over-character.ready:not(.held){border-color:#dbc2ff;box-shadow:0 0 8px #b288d744}

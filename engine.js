@@ -27,7 +27,7 @@ class SabbathGame{
  constructor(){this.reset()}
  reset(chapter=1,carry={}){
   this.chapter=Number.isInteger(chapter)&&CHAPTERS[chapter]?chapter:1;this.level=CHAPTERS[this.chapter];this.scene=this.level.scene;this.totalKills=carry.totalKills||0;
-  this.viewWidth=this.viewWidth||960;this.mode='intro';this.time=carry.time||0;this.kills=0;this.cam=0;this.events=[];this.powerUses=0;this.combo=0;this.comboAge=0;this.shake=0;this.hitstop=0;this.projectiles=[];this.lastDamage=null;this.nextProjectile=0;this.attackTargets=new Set();this.attackBuffer=0;this.jumpBuffer=0;this.stats={hits:0,perfectDodges:0,parries:0,airHits:0,knifeHits:0,damageTaken:0};
+  this.viewWidth=this.viewWidth||960;this.cameraHeading=1;this.cameraTurn=0;this.cameraReady=false;this.mode='intro';this.time=carry.time||0;this.kills=0;this.cam=0;this.events=[];this.powerUses=0;this.combo=0;this.comboAge=0;this.shake=0;this.hitstop=0;this.projectiles=[];this.lastDamage=null;this.nextProjectile=0;this.attackTargets=new Set();this.attackBuffer=0;this.jumpBuffer=0;this.stats={hits:0,perfectDodges:0,parries:0,airHits:0,knifeHits:0,damageTaken:0};
   this.player={x:130,z:0,vz:0,hp:100,maxHp:100,nav:0,face:1,attack:0,cooldown:0,evade:0,evadeCd:0,evadeKind:'forward',evadeDir:1,evadeSpeed:590,inv:0,hurtTime:0,moving:false,power:0,transform:0,stride:0,landTime:0,counter:0,knives:3,throwCd:0,throwTime:0,throwPending:0,throwFacing:1,airAttack:false,lowAttack:false,crouching:false,attackHit:false};
   const cfg=this.level;this.gates=cfg.gates.map(([x,ids])=>[x,[...ids]]);
   this.enemies=cfg.types.map((type,i)=>({id:i,type,x:cfg.xs[i],z:0,hp:TYPES[type].hp,maxHp:TYPES[type].hp,heavy:['heavy','captain'].includes(type),bounds:[...cfg.bounds[this.gates.findIndex(g=>g[1].includes(i))]],phase:cfg.buried.includes(i)?'buried':'idle',timer:0,flash:0,face:-1,dead:false,death:0,spawnX:cfg.xs[i],attackNo:0,shotNo:0,staggerGuard:0,broken:0,walk:false,stride:0,hitPlayer:false,lockedFace:-1,move:'thrust'}));
@@ -36,7 +36,30 @@ class SabbathGame{
   this.exit=cfg.exit;this.markers=new Set();this.hazards=(cfg.embers||[]).map((x,i)=>({x,width:58,phase:'cooldown',timer:1.8+i*.75,hitPlayer:false,hitIds:new Set()}));
   if(carry.maxHp){this.player.maxHp=carry.maxHp;this.player.hp=clamp(carry.hp,1,carry.maxHp);this.powerUses=carry.powerUses||0;for(const key of Object.keys(this.stats))this.stats[key]=carry.stats?.[key]||0;}
  }
- start(){this.mode='playing';this.emit('caption',this.level.intro);}
+ start(){this.mode='playing';if(this.cameraInsets)this.tickCamera(0,true);this.emit('caption',this.level.intro);}
+ cameraFrame(){
+  if(!this.cameraInsets)return null;
+  const {left,right}=this.cameraInsets,w=this.viewWidth;
+  let low=left+52,high=w-right-52;
+  if(high-low<72){const center=clamp((low+high)/2,72,w-72);low=center-36;high=center+36;}
+  return {left:low,right:high};
+ }
+ setCameraInsets(insets){
+  this.cameraInsets=insets;
+  if(insets&&this.scene!=='house'&&this.mode!=='intro')this.tickCamera(0,true);
+ }
+ tickCamera(dt,snap=false){
+  const p=this.player,frame=this.cameraFrame();
+  if(!frame){this.cam+=(clamp(p.x-355,0,this.exit-830)-this.cam)*Math.min(1,dt*4);return;}
+  // Follow actual travel/facing, never the sprite's stride or vertical arc.
+  if(snap||!this.cameraReady){this.cameraHeading=p.face;this.cameraTurn=0;}
+  else if(p.moving&&p.evade===0&&p.face!==this.cameraHeading){this.cameraTurn+=dt;if(this.cameraTurn>=.12){this.cameraHeading=p.face;this.cameraTurn=0;}}
+  else this.cameraTurn=0;
+  const screenX=frame.left+(frame.right-frame.left)*(this.cameraHeading===1?.2:.8),target=p.x-screenX;
+  this.cam=snap||!this.cameraReady?target:this.cam+(target-this.cam)*(1-Math.exp(-8*dt));
+  // Even a fast evade cannot carry the body underneath the touch controls.
+  this.cam=clamp(this.cam,p.x-frame.right,p.x-frame.left);this.cameraReady=true;
+ }
  areaName(){const i=this.gates.findIndex(([x])=>this.player.x<=x);return this.level.areas[i<0?this.level.areas.length-1:i];}
  houseWidth(){return Math.max(1280,this.viewWidth)}
  houseScale(){return this.houseWidth()/1280}
@@ -304,7 +327,7 @@ class SabbathGame{
   this.tickProjectiles(dt);
   for(const [gate,ids] of this.gates)if(p.x>gate&&ids.some(i=>this.enemies.some(e=>e.id===i&&!e.dead))){p.x=gate;if(!this.markers.has('gate'+gate)){this.markers.add('gate'+gate);this.emit('toast','ТЕНИ НЕ ВЫПУСКАЮТ. ОЧИСТИ ПУТЬ.')}}
   const travelled=Math.abs(p.x-beforeX);p.moving=p.moving&&travelled>.01;if(p.moving&&p.hurtTime>0&&this.lastDamage)this.lastDamage.poseUntil=Math.min(this.lastDamage.poseUntil,.18-p.hurtTime+.09);if(p.moving&&p.z===0&&p.vz===0&&p.evade===0)p.stride+=travelled;
-  this.cam+=(clamp(p.x-355,0,this.exit-830)-this.cam)*Math.min(1,dt*4);
+  this.tickCamera(dt);
   for(const [x,msg] of this.level.captions)if(p.x>x&&!this.markers.has(x)){this.markers.add(x);this.emit('caption',msg)}
   if(this.mode==='playing'&&this.enemies.length>0&&this.enemies.every(e=>e.dead)&&p.x>=this.exit){this.mode='won';this.emit('won')}
  }

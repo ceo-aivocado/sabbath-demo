@@ -4,6 +4,7 @@ let W=960;
 const H=540,G=440,keys=new Set(),art={},particles=[],ghosts=[];
 const TRAIL_SPACING=24,TRAIL_LIFE=.22;let trailDistance=0;
 let crouchToggle=false,pausedMode='playing',transition=0,storyUntil=0,savedCheckpoint=null;
+let touchOccluders=[];
 const CHECKPOINT_KEY='sabbath-journey-v1';
 try{const data=JSON.parse(localStorage.getItem(CHECKPOINT_KEY));if(data&&new SabbathGame().restoreCheckpoint(data))savedCheckpoint=data;}catch{}
 function saveCheckpoint(){savedCheckpoint=game.checkpoint();try{localStorage.setItem(CHECKPOINT_KEY,JSON.stringify(savedCheckpoint))}catch{}}
@@ -503,6 +504,28 @@ function renderHouse(cam,t){
 }
 
 function phonePortrait(){return !document.body.classList.contains('desktop')&&innerHeight>innerWidth}
+function measureTouchView(bounds){
+ if(document.body.classList.contains('desktop')||phonePortrait()||!bounds.width||!bounds.height){touchOccluders=[];return null;}
+ const scale=W/bounds.width,padStyle=getComputedStyle(movePad),padLeft=parseFloat(padStyle.left),padBottom=parseFloat(padStyle.bottom),padWidth=parseFloat(padStyle.width);
+ const actions=[...document.querySelectorAll('#touch > button')],rightInset=Math.max(...actions.map(b=>{const s=getComputedStyle(b);return parseFloat(s.right)+parseFloat(s.width)}));
+ touchOccluders=[...document.querySelectorAll('#touch button')].map(button=>{
+  const s=getComputedStyle(button),width=parseFloat(s.width),height=parseFloat(s.height),inPad=button.parentElement===movePad;
+  const left=parseFloat(s.left),right=parseFloat(s.right),bottom=parseFloat(s.bottom);
+  const x=(inPad?padLeft:0)+(Number.isFinite(left)?left:bounds.width-right-width)+width/2;
+  const y=bounds.height-(inPad?padBottom:0)-bottom-height/2;
+  return {button,x:x*scale,y:y*scale,r:Math.max(width,height)*scale/2,until:0};
+ });
+ return {left:(padLeft+padWidth)*scale,right:rightInset*scale};
+}
+function revealCoveredCharacters(){
+ if(!touchOccluders.length||!['playing','house'].includes(game.mode))return;
+ const p=game.player,house=game.scene==='house',size=house?2.4*game.houseScale():1;
+ const figures=[{x:p.x-game.cam,y:G-p.z,half:48*size,height:132*size},...game.enemies.filter(e=>!e.dead&&!['buried','emerge'].includes(e.phase)).map(e=>({x:e.x-game.cam,y:G-e.z,half:e.heavy?68:55,height:e.type==='crawler'?72:e.type==='spitter'?106:e.heavy?172:144}))];
+ for(const control of touchOccluders){
+  const covered=figures.some(f=>{const x=clamp(control.x,f.x-f.half,f.x+f.half),y=clamp(control.y,f.y-f.height,f.y);return Math.hypot(control.x-x,control.y-y)<control.r+8;});
+  if(covered)control.until=clock+.18;control.button.classList.toggle('over-character',covered||control.until>clock);
+ }
+}
 function fitViewport(){
  document.body.classList.toggle('phone-portrait',phonePortrait());
  if(phonePortrait()&&sceneLoad)sceneLoad.pauseRequested=true;
@@ -511,6 +534,7 @@ function fitViewport(){
  const bounds=canvas.getBoundingClientRect();
  const width=immersive&&bounds.height>0?Math.max(1,Math.round(H*bounds.width/bounds.height)):960;
  const oldHouseWidth=game.houseWidth();if(width!==W){W=width;canvas.width=W;}game.viewWidth=W;
+ game.setCameraInsets(measureTouchView(bounds));
  if(game.scene==='house'&&game.houseWidth()!==oldHouseWidth){game.player.x*=game.houseWidth()/oldHouseWidth;game.cam=clamp(game.player.x-W*.45,0,game.houseWidth()-W);}
 }
 window.addEventListener('resize',fitViewport);
@@ -542,7 +566,7 @@ function loop(now){if(phonePortrait()!==document.body.classList.contains('phone-
  if(soundscape){const boss=game.enemies.find(e=>e.type==='captain'&&!e.dead&&Math.abs(e.x-game.player.x)<520);soundscape.update(dt,{scene:game.scene,mode:sceneLoad?'paused':game.mode,boss:!!boss,enraged:!!boss?.enraged});}
  const inHouse=game.scene==='house';if(document.body.dataset.scene!==game.scene)document.body.dataset.scene=game.scene;const focus=inHouse&&game.mode==='house'?game.houseFocus():null;$('interact-hint').hidden=!focus||!$('intro').hidden;$('interact-hint').textContent=focus?(focus.id==='door'?'К СЕЧИ →':(matchMedia('(pointer: coarse)').matches?'':'S · ')+focus.title):'';if(clock>storyUntil||!inHouse)$('story-copy').hidden=true;document.querySelector('[data-key="j"]').textContent=inHouse?'ОСМОТР':'САБЛЯ';
  document.querySelector('[data-key="x"]').classList.toggle('ready',game.player.crouching);document.querySelector('[data-key="x"]').setAttribute('aria-pressed',String(game.player.crouching));const knifeButton=document.querySelector('[data-key="v"]');knifeButton.textContent='КОРТИК '+game.player.knives;knifeButton.style.opacity=game.player.throwCd>0||game.player.knives===0?'.4':'1';document.querySelector('[data-key="Shift"]').style.opacity=game.player.evadeCd>0?'.45':'1';document.querySelector('[data-key="e"]').classList.toggle('ready',game.player.nav>=100||game.player.power>0);
- $('test-heal').disabled=!['playing','house'].includes(game.mode)||game.player.hp<=0||game.player.hp>=game.player.maxHp;
+ revealCoveredCharacters();$('test-heal').disabled=!['playing','house'].includes(game.mode)||game.player.hp<=0||game.player.hp>=game.player.maxHp;
  $('health').style.width=game.player.hp+'%';$('hptext').textContent=Math.ceil(game.player.hp)+(game.player.maxHp<100?'/'+game.player.maxHp:'');$('power').style.width=(game.player.power>0?game.player.power/8*100:game.player.nav)+'%';$('hud').classList.toggle('demonic',game.player.power>0);$('powertext').textContent=game.player.transform>0?'ПРЕВРАЩЕНИЕ':game.player.power>0?'ДЕМОН · '+game.player.power.toFixed(1)+' С':game.player.nav>=100?(document.body.classList.contains('desktop')?'D · НАВЬ':'НАВЬ ГОТОВА')+' / ЦЕНА: 8 МАКС. HP':'НАВЬ · '+Math.floor(game.player.nav)+' / 100';$('kills').innerHTML=game.kills+' <em>/ '+game.enemies.length+'</em>';$('area').textContent=`${game.chapter}/5 · ${game.areaName()}`;const captain=game.enemies.find(e=>e.type==='captain'&&!e.dead);$('boss-hud').hidden=!captain||Math.abs(captain.x-game.player.x)>520||game.mode==='intro';if(captain){$('boss-health').style.width=100*captain.hp/captain.maxHp+'%';$('boss-name').textContent=captain.enraged?'СОТНИК · ЯРОСТЬ':'СОТНИК СТОРОЖИ';}const noticesVisible=$('intro').hidden&&$('menu').hidden;for(const id of ['caption','toast'])$(id).style.visibility=noticesVisible?'visible':'hidden';$('caption').style.opacity=clock<captionUntil?'1':'0';if(clock>toastUntil)$('toast').textContent='';render();requestAnimationFrame(loop)}
 // Read-only state export for reproducible local browser checks.
 window.sabbath={game,keys,ready:()=>ready&&!sceneLoad,loading:()=>({...loading,failed:[...(loading.failed||[])]}),prepareOffline:()=>warmAll(true),render};loadAssets();requestAnimationFrame(loop);
