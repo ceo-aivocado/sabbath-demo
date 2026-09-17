@@ -9,7 +9,7 @@ function saveCheckpoint(){savedCheckpoint=game.checkpoint();try{localStorage.set
 let last=0,clock=0,captionUntil=0,toastUntil=0,soundOn=true,audio=null,soundscape=null,audioSleep=null,footstep=0,footstepCrouched=false,ready=false;
 try{soundOn=localStorage.getItem('sabbath-sound')!=='off'}catch{}
 // All imagery is local; this game makes no network requests except loading its own files.
-const assets={crouchWalk:'assets/yaromir-crouch-walk.png',air:'assets/yaromir-air.png',guardWalk:'assets/guards-walk.png',guardReady:'assets/guards-ready.png',villages:'assets/villages-panorama.png',skit:'assets/skit-panorama.png',fortress:'assets/fortress-panorama.png',guards:'assets/guards-atlas-v2.png',house:'assets/house-interior.png',sich:'assets/sich-panorama.png',gunner:'assets/gunner-atlas.png',throw:'assets/yaromir-throw.png',crouch:'assets/yaromir-crouch.png',demonWalk:'assets/yaromir-demon-walk.png',walk:'assets/yaromir-walk.png',hero:'assets/yaromir-atlas.png',demon:'assets/yaromir-demon-atlas.png',special:'assets/enemies-special.png',enemy:'assets/enemies-atlas.png',bg:'assets/background-panorama.png',props:'assets/props-atlas.png'};
+const assets={enemyWalk:'assets/enemies-walk.png',enemyCombat:'assets/enemies-combat.png',crouchWalk:'assets/yaromir-crouch-walk.png',air:'assets/yaromir-air.png',guardWalk:'assets/guards-walk.png',guardReady:'assets/guards-ready.png',villages:'assets/villages-panorama.png',skit:'assets/skit-panorama.png',fortress:'assets/fortress-panorama.png',guards:'assets/guards-atlas-v2.png',house:'assets/house-interior.png',sich:'assets/sich-panorama.png',gunner:'assets/gunner-atlas.png',throw:'assets/yaromir-throw.png',crouch:'assets/yaromir-crouch.png',demonWalk:'assets/yaromir-demon-walk.png',walk:'assets/yaromir-walk.png',hero:'assets/yaromir-atlas.png',demon:'assets/yaromir-demon-atlas.png',special:'assets/enemies-special.png',enemy:'assets/enemies-atlas.png',bg:'assets/background-panorama.png',props:'assets/props-atlas.png'};
 const loading={phase:'idle',loaded:0,total:Object.keys(assets).length,failed:[]};
 let loadGeneration=0;
 function loadingProgress(){
@@ -146,6 +146,18 @@ function hero(frame,x,y,alpha=1){
  function layer(img,opacity,demonic){if(!img||opacity<=0)return;const f=demonic?demonFrames[frame]:heroFrames[frame],sx=img.width/1774,sy=img.height/887;ctx.save();ctx.globalAlpha=alpha*opacity;ctx.translate(Math.round(x),Math.round(y));ctx.scale(p.face,1);const clip=(demonic?demonClips:humanClips)[frame];if(clip){ctx.beginPath();clip.forEach(([u,v],i)=>i?ctx.lineTo((u-f[4])*.30,(v-f[5])*.30):ctx.moveTo((u-f[4])*.30,(v-f[5])*.30));ctx.closePath();ctx.clip()}if(demonic){ctx.shadowColor='#986ad0';ctx.shadowBlur=9}if(p.inv>0&&Math.floor(clock*18)%2===0)ctx.globalAlpha*=.65;ctx.drawImage(img,f[0]*sx,f[1]*sy,f[2]*sx,f[3]*sy,-f[4]*.30,-f[5]*.30,f[2]*.30,f[3]*.30);ctx.restore()}
  layer(art.hero,1-blend,false);layer(art.demon,blend,true);if(p.lowAttack&&p.attack>.08&&p.attack<.25){ctx.save();ctx.translate(x,y);ctx.scale(p.attackFacing,1);ctx.strokeStyle=p.power>0?'#c7a0ef':'#e7d8b2';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(32,-23,53,9,0,-.8,2.2);ctx.stroke();ctx.restore();}
 }
+// Each drowned pose has a pelvis anchor and a planted foot; no whole-body wobble.
+function drownedFrame(e){
+ if(!['cutter','heavy'].includes(e.type)||!art.enemyWalk||!art.enemyCombat)return null;
+ const heavy=e.type==='heavy',row=heavy?1:0;
+ const walk=[[[0,0,443,432,252,420],[443,0,444,432,234,420],[887,0,443,432,235,420],[1330,0,444,432,257,421]],[[0,436,460,451,258,426],[465,436,422,451,250,420],[890,436,446,451,256,427],[1340,436,434,451,275,427]]];
+ // The sabre reaches into the left gutter of frame 3; the raised axe starts at y=419.
+ const combat=[[[0,0,443,428,267,421],[443,0,397,419,221,418],[840,0,490,430,272,422],[1330,0,444,430,284,421]],[[0,443,443,444,228,416],[465,419,370,468,176,441],[880,443,464,444,268,417],[1344,443,430,444,273,417]]];
+ if(!e.dead&&e.phase==='idle'&&e.walk){const i=Math.floor((e.stride||0)/14)%4;return {img:art.enemyWalk,f:walk[row][i],scale:heavy?.36:.31,pose:'walk-'+i};}
+ const early=e.phase==='windup'&&e.timer>(e.windupDuration||((heavy?.95:.60)*(e.enraged?.75:1)))*.48;
+ const i=!e.dead&&e.phase==='windup'?(early?0:1):!e.dead&&e.phase==='strike'?2:3;
+ return {img:art.enemyCombat,f:combat[row][i],scale:heavy?.40:.36,pose:e.phase==='windup'?(early?'windup-early':'windup-late'):e.dead?'dead':e.phase};
+}
 function enemy(e){
  if(['lancer','captain'].includes(e.type)){guard(e);return;}
  if(e.type==='gunner'){gunner(e);return;}
@@ -158,8 +170,8 @@ function enemy(e){
  if(windup){const color=e.heavy?'#e4b164':crouch?'#e6a255':spitter?'#b08edc':'#e3796a';ctx.save();ctx.globalAlpha=.35+.2*Math.sin(clock*18);ctx.fillStyle=color;const range=e.heavy?210:crouch?190:76;if(spitter){ctx.strokeStyle=color;ctx.setLineDash([5,7]);ctx.beginPath();ctx.moveTo(x,G-82);ctx.lineTo(x+e.lockedFace*200,G-82);ctx.stroke()}else ctx.fillRect(e.heavy?x-range:x+(e.lockedFace<0?-range:0),G-3,e.heavy?range*2:range,3);ctx.restore();}
  ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.scale(-e.face,1);ctx.globalAlpha=e.dead?e.death*e.death:1;if(e.dead)ctx.rotate((1-e.death)*.75);
  if(e.flash>0)ctx.filter='brightness(2) saturate(.4)';else if(e.enraged){ctx.filter='sepia(.25) saturate(1.4)';ctx.shadowColor='#d97e54';ctx.shadowBlur=5;}
- if(windup){ctx.shadowColor=e.heavy?'#d9ab67':spitter?'#bc85dc':'#ee7952';ctx.shadowBlur=10;ctx.rotate(-e.face*Math.sin(clock*12)*.025)}
- const wide=special&&crouch&&col===3,sourceX=wide?sprite.width*(1240/1774):col*sw,sourceW=wide?sprite.width*(534/1774):sw,anchor=special?(wide?300:220):[240,230,220,300][col];ctx.drawImage(sprite,sourceX,row*sh,sourceW,sh,-anchor*scale,-(row?415:402)*scale,sourceW*scale,sh*scale);ctx.restore();
+ if(windup){ctx.shadowColor=e.heavy?'#d9ab67':spitter?'#bc85dc':'#ee7952';ctx.shadowBlur=10;}
+ const grounded=drownedFrame(e);if(grounded){const {img,f,scale}=grounded;ctx.drawImage(img,...f.slice(0,4),-f[4]*scale,-f[5]*scale,f[2]*scale,f[3]*scale);}else{const wide=special&&crouch&&col===3,sourceX=wide?sprite.width*(1240/1774):col*sw,sourceW=wide?sprite.width*(534/1774):sw,anchor=special?(wide?300:220):[240,230,220,300][col];ctx.drawImage(sprite,sourceX,row*sh,sourceW,sh,-anchor*scale,-(row?415:402)*scale,sourceW*scale,sh*scale);}ctx.restore();
  if(spitter&&!e.dead&&!special){glow(x-e.face*5,G-88,14,windup?'#c198fb88':'#aa8bbc33');rect(x-e.face*5,G-91,4,4,'#c4a1dd')}
  if(e.phase==='emerge')ctx.restore();
  if(e.broken>0){ctx.strokeStyle='#e8dba0';ctx.beginPath();ctx.moveTo(x-15,G-155);ctx.lineTo(x-3,G-148);ctx.lineTo(x+2,G-163);ctx.lineTo(x+15,G-155);ctx.stroke()}
