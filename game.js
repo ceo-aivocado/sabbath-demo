@@ -10,7 +10,34 @@ let last=0,clock=0,captionUntil=0,toastUntil=0,soundOn=true,audio=null,soundscap
 try{soundOn=localStorage.getItem('sabbath-sound')!=='off'}catch{}
 // All imagery is local; this game makes no network requests except loading its own files.
 const assets={crouchWalk:'assets/yaromir-crouch-walk.png',air:'assets/yaromir-air.png',guardWalk:'assets/guards-walk.png',guardReady:'assets/guards-ready.png',villages:'assets/villages-panorama.png',skit:'assets/skit-panorama.png',fortress:'assets/fortress-panorama.png',guards:'assets/guards-atlas-v2.png',house:'assets/house-interior.png',sich:'assets/sich-panorama.png',gunner:'assets/gunner-atlas.png',throw:'assets/yaromir-throw.png',crouch:'assets/yaromir-crouch.png',demonWalk:'assets/yaromir-demon-walk.png',walk:'assets/yaromir-walk.png',hero:'assets/yaromir-atlas.png',demon:'assets/yaromir-demon-atlas.png',special:'assets/enemies-special.png',enemy:'assets/enemies-atlas.png',bg:'assets/background-panorama.png',props:'assets/props-atlas.png'};
-Promise.all(Object.entries(assets).map(([key,url])=>new Promise((resolve,reject)=>{let i=new Image();i.onload=()=>{art[key]=i;if(key==='bg')document.documentElement.style.setProperty('--scene-background',`url("${i.src}")`);resolve()};i.onerror=()=>reject(new Error(url));i.src=url}))).then(()=>{ready=true;$('start').disabled=false;$('start').textContent=savedCheckpoint?'ПРОДОЛЖИТЬ ПУТЬ':'ВОЙТИ В СЛОБОДУ';$('fresh-start').hidden=!savedCheckpoint;}).catch(e=>{$('start').textContent='НЕ УДАЛОСЬ ЗАГРУЗИТЬ ИЗОБРАЖЕНИЯ';$('toast').textContent='Открой index.html из полной папки игры. Не найден: '+e.message;});
+const loading={phase:'idle',loaded:0,total:Object.keys(assets).length,failed:[]};
+let loadGeneration=0;
+function loadingProgress(){
+ loading.loaded=Object.keys(art).length;const percent=Math.round(100*loading.loaded/loading.total);
+ $('start').textContent='ЗАГРУЗКА · '+percent+'%';$('load-fill').style.width=percent+'%';$('load-meter').setAttribute('aria-valuenow',String(percent));
+}
+async function loadAssets(){
+ if(loading.phase==='loading'||ready)return;const generation=++loadGeneration,restoreFocus=document.activeElement===$('start');let timedOut=false;
+ function restoreButtonFocus(){if(restoreFocus&&[document.body,$('start')].includes(document.activeElement))$('start').focus();}
+ loading.phase='loading';loading.failed=[];ready=false;$('start').disabled=true;$('fresh-start').hidden=true;$('load-status').hidden=false;$('load-status').classList.remove('failed');$('load-copy').textContent='Готовим сцену…';loadingProgress();
+ const priority=['bg','hero','demon'],queue=Object.entries(assets).filter(([key])=>!art[key]).sort(([a],[b])=>(priority.includes(a)?priority.indexOf(a):3)-(priority.includes(b)?priority.indexOf(b):3)),active=new Set();let next=0;
+ const deadline=setTimeout(()=>{timedOut=true;for(const cancel of [...active])cancel();},20000);
+ function one(key,url){return new Promise(resolve=>{
+  const image=new Image();let settled=false;
+  function finish(ok){
+   if(settled)return;settled=true;active.delete(cancel);image.onload=image.onerror=null;
+   if(ok&&!timedOut&&generation===loadGeneration){art[key]=image;if(key==='bg')document.documentElement.style.setProperty('--scene-background',`url("${image.src}")`);loadingProgress();}
+   else image.removeAttribute('src');resolve();
+  }
+  const cancel=()=>finish(false);active.add(cancel);image.onload=()=>finish(image.naturalWidth>0);image.onerror=()=>finish(false);
+  try{image.src=url}catch{finish(false)}
+ });}
+ async function worker(){while(!timedOut&&next<queue.length&&generation===loadGeneration){const [key,url]=queue[next++];await one(key,url);}}
+ await Promise.all([worker(),worker()]);clearTimeout(deadline);if(generation!==loadGeneration)return;
+ loading.failed=Object.keys(assets).filter(key=>!art[key]);loading.loaded=Object.keys(art).length;
+ if(loading.failed.length){loading.phase='failed';$('start').disabled=false;$('start').textContent='ПОВТОРИТЬ ЗАГРУЗКУ';$('load-status').classList.add('failed');$('load-copy').textContent=timedOut?'Подготовка заняла слишком долго. Нажми «Повторить загрузку».':'Не удалось подготовить сцену. Нажми «Повторить загрузку».';restoreButtonFocus();return;}
+ loading.phase='ready';ready=true;$('load-status').hidden=true;$('start').disabled=false;$('start').textContent=savedCheckpoint?'ПРОДОЛЖИТЬ ПУТЬ':'ВОЙТИ В СЛОБОДУ';$('fresh-start').hidden=!savedCheckpoint;restoreButtonFocus();
+}
 const rand=(n)=>{let a=Math.sin(n*127.1+311.7)*43758.5453;return a-Math.floor(a)},clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.ceil(w),Math.ceil(h))}
 function glow(x,y,r,color){const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,color);g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2)}
@@ -31,14 +58,14 @@ $('fullscreen').onclick=()=>{if(document.fullscreenElement)document.exitFullscre
 function start(fresh=false){if(!ready||phonePortrait())return;clearTouch();if(fresh){savedCheckpoint=null;try{localStorage.removeItem(CHECKPOINT_KEY)}catch{}}
  if(!savedCheckpoint||!game.restoreCheckpoint(savedCheckpoint)){game.reset();game.start();}
  particles.length=0;ghosts.length=0;keys.clear();$('intro').hidden=true;$('menu').hidden=true;$('story-copy').hidden=true;$('hud').hidden=false;storyUntil=0;transition=.45;canvas.focus();resetFootsteps();if(soundOn)initAudio();syncAudio();soundLabel();}
-$('start').onclick=()=>start();$('restart').onclick=()=>start();$('fresh-start').onclick=()=>start(true);$('new-run').onclick=()=>start(true);
+$('start').onclick=()=>loading.phase==='failed'?loadAssets():start();$('restart').onclick=()=>start();$('fresh-start').onclick=()=>start(true);$('new-run').onclick=()=>start(true);
 $('interact-hint').onclick=()=>game.interact();
 function pause(){clearTouch();if(['playing','house'].includes(game.mode)){pausedMode=game.mode;game.mode='paused';showMenu('ПАУЗА','Тишина между ударами','Путь дождётся тебя.',true)}else if(game.mode==='paused'){game.mode=pausedMode;$('menu').hidden=true;canvas.focus()}keys.clear();syncAudio()}
 $('pause').onclick=pause;$('resume').onclick=pause;
 function showMenu(label,title,copy,resume=false){$('continue-level').hidden=true;$('restart').hidden=false;$('endlabel').textContent=label;$('endtitle').textContent=title;$('endcopy').textContent=copy;$('resume').hidden=!resume;$('restart').textContent=savedCheckpoint?'С КОНТРОЛЬНОЙ ТОЧКИ':resume?'НАЧАТЬ ЗАНОВО':'ПРОЙТИ ЕЩЁ РАЗ';$('new-run').hidden=!savedCheckpoint;$('menu').hidden=false}
 function keyName(e){return ({KeyA:'a',KeyD:'d',KeyZ:'j',KeyJ:'j',KeyK:'k',KeyC:'e',KeyE:'e',KeyW:' ',Space:' ',ArrowDown:'x',KeyX:'x',KeyQ:'q',KeyV:'v',KeyF:'f',Enter:'Enter',ArrowLeft:'a',ArrowRight:'d',ArrowUp:' ',ShiftLeft:'Shift',ShiftRight:'Shift',Escape:'Escape'})[e.code]||e.key}
 function press(key,repeat){if(game.mode==='won'&&game.chapter>=2&&game.chapter<5&&!repeat&&['Enter',' ','j'].includes(key)){continueJourney();return;}if(key==='Escape'&&!repeat){pause();return}if(game.mode==='house'){keys.add(key);if(!repeat&&['j','q','f','Enter'].includes(key))game.interact();return;}if(game.mode!=='playing')return;keys.add(key);if(!repeat){if(key==='x')game.player.crouching=game.player.z===0&&game.player.evade===0;if(key==='j')game.attack();if(key===' '){crouchToggle=false;game.jump();}if(key==='q'){crouchToggle=false;game.dodge('back');}if(key==='Shift'||key==='k'){const back=keys.has('x')||crouchToggle;crouchToggle=false;game.dodge(back?'back':'forward');}if(key==='v')game.knife();if(key==='e')game.power()}}
-window.addEventListener('keydown',e=>{let k=keyName(e);if(['a','d','j','k','e','x','q','v','f','Enter',' ','Shift','Escape'].includes(k)){e.preventDefault();press(k,e.repeat)}});window.addEventListener('keyup',e=>keys.delete(keyName(e)));window.addEventListener('blur',()=>{keys.clear();if(['playing','house'].includes(game.mode))pause()});document.addEventListener('visibilitychange',()=>{if(document.hidden&&['playing','house'].includes(game.mode))pause();syncAudio(false)});
+window.addEventListener('keydown',e=>{let k=keyName(e);if(['Enter',' '].includes(k)&&e.target.closest?.('button:not([data-key]),a'))return;if(['a','d','j','k','e','x','q','v','f','Enter',' ','Shift','Escape'].includes(k)){e.preventDefault();press(k,e.repeat)}});window.addEventListener('keyup',e=>keys.delete(keyName(e)));window.addEventListener('blur',()=>{keys.clear();if(['playing','house'].includes(game.mode))pause()});document.addEventListener('visibilitychange',()=>{if(document.hidden&&['playing','house'].includes(game.mode))pause();syncAudio(false)});
 // iOS may synthesize zoom gestures independently of pointer events.
 for(const type of ['gesturestart','gesturechange','gestureend'])document.addEventListener(type,e=>e.preventDefault(),{passive:false});
 $('stage').addEventListener('dblclick',e=>e.preventDefault());
@@ -272,7 +299,7 @@ window.visualViewport?.addEventListener('resize',fitViewport);
 // Orientation CSS settles after the resize event on WebKit. Observe actual canvas layout.
 new ResizeObserver(fitViewport).observe(canvas);
 fitViewport();
-function render(){ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.imageSmoothingEnabled=false;ctx.save();const intro=game.mode==='intro',cam=intro?Math.sin(clock*.035)*60+100:game.cam;let shake=game.mode==='playing'?game.shake:0;ctx.translate((rand(clock)*2-1)*shake,(rand(clock+2)*2-1)*shake*.4);renderBackground(cam,clock);
+function render(){ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.imageSmoothingEnabled=false;if(!ready){rect(0,0,W,H,'#0c141f');if(art.bg){const bg=backgroundLayout(100);ctx.drawImage(art.bg,Math.round(bg.x),Math.round(bg.y),bg.width,bg.height);}return;}ctx.save();const intro=game.mode==='intro',cam=intro?Math.sin(clock*.035)*60+100:game.cam;let shake=game.mode==='playing'?game.shake:0;ctx.translate((rand(clock)*2-1)*shake,(rand(clock+2)*2-1)*shake*.4);renderBackground(cam,clock);
  if(intro){let prev=game.player.face;game.player.face=-1;hero(0,745,442);game.player.face=prev}else{for(const ghost of ghosts){hero(7,ghost.x-game.cam,G-ghost.z,ghost.life*.3)}for(const e of game.enemies)enemy(e);let p=game.player;ctx.save();ctx.globalAlpha=.38;ctx.fillStyle='#000';ctx.beginPath();ctx.ellipse(p.x-game.cam,G+3,28*(game.scene==='house'?2.4*game.houseScale():1),5*(game.scene==='house'?2.4*game.houseScale():1),0,0,7);ctx.fill();ctx.restore();let frame=p.evade>0?(p.evadeKind==='back'?0:7):p.attack>0?(p.airAttack?(p.attack>.25?4:6):(p.counterAttack||game.combo===2)?(p.attack>.25?0:5):game.combo===3?(p.attack>.25?7:6):(p.attack>.25?4:6)):p.z>0?2:p.moving?1+Math.floor(p.stride/14)%3:0;if(game.scene==='house'){
   // Match adult height to the doorway, with the bench at knee height.
   // Indoor staging has its own scale; combat sprites and hitboxes stay unchanged.
@@ -298,4 +325,4 @@ function loop(now){if(phonePortrait()!==document.body.classList.contains('phone-
  document.querySelector('[data-key="x"]').classList.toggle('ready',game.player.crouching);document.querySelector('[data-key="x"]').setAttribute('aria-pressed',String(game.player.crouching));const knifeButton=document.querySelector('[data-key="v"]');knifeButton.textContent='КОРТИК '+game.player.knives;knifeButton.style.opacity=game.player.throwCd>0||game.player.knives===0?'.4':'1';document.querySelector('[data-key="q"]').style.opacity=game.player.evadeCd>0?'.45':'1';document.querySelector('[data-key="Shift"]').style.opacity=game.player.evadeCd>0?'.45':'1';document.querySelector('[data-key="e"]').classList.toggle('ready',game.player.nav>=100||game.player.power>0);
  $('health').style.width=game.player.hp+'%';$('hptext').textContent=Math.ceil(game.player.hp)+(game.player.maxHp<100?'/'+game.player.maxHp:'');$('power').style.width=(game.player.power>0?game.player.power/8*100:game.player.nav)+'%';$('hud').classList.toggle('demonic',game.player.power>0);$('powertext').textContent=game.player.transform>0?'ПРЕВРАЩЕНИЕ':game.player.power>0?'ДЕМОН · '+game.player.power.toFixed(1)+' С':game.player.nav>=100?'C · НАВЬ / ЦЕНА: 8 МАКС. HP':'НАВЬ · '+Math.floor(game.player.nav)+' / 100';$('kills').innerHTML=game.kills+' <em>/ '+game.enemies.length+'</em>';$('area').textContent=`${game.chapter}/5 · ${game.areaName()}`;const captain=game.enemies.find(e=>e.type==='captain'&&!e.dead);$('boss-hud').hidden=!captain||Math.abs(captain.x-game.player.x)>520||game.mode==='intro';if(captain){$('boss-health').style.width=100*captain.hp/captain.maxHp+'%';$('boss-name').textContent=captain.enraged?'СОТНИК · ЯРОСТЬ':'СОТНИК СТОРОЖИ';}$('caption').style.opacity=clock<captionUntil?'1':'0';if(clock>toastUntil)$('toast').textContent='';render();requestAnimationFrame(loop)}
 // Read-only state export for reproducible local browser checks.
-window.sabbath={game,keys,ready:()=>ready,render};requestAnimationFrame(loop);
+window.sabbath={game,keys,ready:()=>ready,loading:()=>({...loading,failed:[...loading.failed]}),render};loadAssets();requestAnimationFrame(loop);

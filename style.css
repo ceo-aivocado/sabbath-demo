@@ -120,3 +120,11 @@ body.phone-portrait .rotate-brand{font:32px Georgia;letter-spacing:8px}
 body.phone-portrait .rotate-subtitle{font:18px Georgia;margin-top:12px;color:#b6af9f}
 body.phone-portrait .rotate-symbol{font:64px Georgia;margin:38px 0 20px;color:#b99461}
 body.phone-portrait #rotate-hint p{font:16px/1.5 Arial;max-width:270px;color:#dcc8a1}
+
+/* Preparation belongs to the title screen and disappears before play. */
+#intro:not([hidden]) ~ #touch,#menu:not([hidden]) ~ #touch{display:none!important}
+#load-status{max-width:290px;margin-top:9px;font:11px/1.45 Arial,sans-serif;color:#bdbaaa;letter-spacing:.15px}
+#load-meter{height:3px;margin-top:7px;background:#dac28a22;overflow:hidden;border-radius:2px}
+#load-fill{display:block;height:100%;width:0;background:#c4a569;transition:width .12s}
+#load-status.failed{color:#dcc799}
+#load-status.failed #load-meter{display:none}
