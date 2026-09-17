@@ -97,7 +97,7 @@ class SabbathGame{
  }
  damageEnemy(e,d,options={}){
   if(e.dead)return;e.hp=Math.max(0,e.hp-d);e.flash=.14;this.emit('sparks',{x:e.x,heavy:e.heavy});
-  if(e.hp<=0){e.dead=true;e.death=1;e.phase='dead';this.kills++;if(this.kills%3===0)this.player.knives=Math.min(3,this.player.knives+1);if(this.player.hp>0)this.player.hp=clamp(this.player.hp+2,0,this.player.maxHp);this.emit('kill',e.x)}
+  if(e.hp<=0){e.dead=true;e.death=1;e.phase='dead';e.waveTotal=0;e.waveIndex=0;this.kills++;if(this.kills%3===0)this.player.knives=Math.min(3,this.player.knives+1);if(this.player.hp>0)this.player.hp=clamp(this.player.hp+2,0,this.player.maxHp);this.emit('kill',e.x)}
   else if(options.stagger!==false&&e.phase!=='strike'&&(!e.heavy||options.finisher)&&(e.staggerGuard<=0||options.finisher)){e.phase='hurt';e.volley=0;e.waveTotal=0;e.waveIndex=0;e.timer=options.finisher?.42:.18;e.staggerGuard=1.1}
  }
  dodge(kind='forward'){
@@ -105,6 +105,7 @@ class SabbathGame{
   const threat=this.enemies.some(e=>{
    if(e.dead||e.phase!=='windup'||e.timer>=.25)return false;
    if(e.type==='captain'&&e.move==='wave')return p.z<35&&Math.abs(e.x-p.x)<TYPES.captain.reach+35;
+   if(e.type==='heavy'){const distance=Math.abs(e.x-p.x),wave=p.z<35&&distance<TYPES.heavy.reach+35,axe=(e.waveIndex||0)===0&&p.z<70&&distance<TYPES.heavy.reach&&(p.x-e.x)*e.lockedFace>=-24;return wave||axe;}
    if(['lancer','captain'].includes(e.type)&&e.move==='thrust'&&p.crouching)return false;
    return (p.x-e.x)*e.lockedFace>=-24&&(e.type==='gunner'&&e.move==='butt'?p.z<BUTT.height&&Math.abs(e.x-p.x)<BUTT.reach:Math.abs(e.x-p.x)<TYPES[e.type].reach+35);
   })||this.projectiles.some(s=>!s.dead&&!s.friendly&&Math.abs(s.x-p.x)<95&&s.vx*(p.x-s.x)>0&&(s.kind==='wave'?p.z<35:Math.abs(s.z-(p.z+(p.crouching?26:52)))<(p.crouching?26:39)))||this.barrels.some(b=>b.phase==='fuse'&&b.timer<.20&&Math.abs(b.x-p.x)<=b.radius&&p.z<68);
@@ -140,6 +141,8 @@ class SabbathGame{
  spawnShot(e,kind,direction){if(kind==='lead'){this.projectiles.push({id:this.nextProjectile++,kind,x:e.x+direction*85,z:e.shotLow?48:88,vx:direction*510,life:1.25,damage:22,dead:false});this.emit('gunshot',{x:e.x+direction*85,z:e.shotLow?48:88,face:direction});return;}this.projectiles.push({id:this.nextProjectile++,kind,x:e.x+direction*30,z:kind==='wave'?8:82,vx:direction*(kind==='wave'?240:210),life:kind==='wave'?1.15:2.8,damage:kind==='wave'?25:18,dead:false});}
  beginEnemy(e){if(['lancer','captain'].includes(e.type)){this.beginGuard(e);return;}const cfg=TYPES[e.type];
   if(e.type==='gunner'){e.move=Math.abs(this.player.x-e.x)<BUTT.trigger?'butt':'shot';e.volley=0;if(e.move==='shot')e.shotNo=(e.shotNo||0)+1;}
+  // Fix the complete heavy sequence before the first visible windup.
+  e.waveTotal=e.type==='heavy'?(e.enraged?2:1):0;e.waveIndex=0;
   const butt=e.type==='gunner'&&e.move==='butt';e.phase='windup';e.timer=(butt?BUTT.windup:cfg.windup)*(e.enraged?.75:1);e.windupDuration=e.timer;e.lockedFace=e.face;e.attackNo++;e.shotLow=e.type==='gunner'&&!butt&&e.shotNo%2===0;e.walk=false;e.hitPlayer=false;this.emit('warning',{x:e.x,type:e.type,move:e.move,low:!!e.shotLow,enraged:!!e.enraged});
   const marker=butt?'gunner-butt':e.type;if(!this.markers.has(marker)){this.markers.add(marker);const tips={'gunner-butt':'ПРИКЛАД: отскочи или зайди за спину.',gunner:'СТРЕЛОК: высокий выстрел — присядь; низкий — прыгни. Кортик сбивает прицел.',cutter:'Вспышка перед ударом. Рывок в последний момент усиливает ответ.',crawler:'ПОЛЗУН: низкий бросок. Перепрыгни и ударь сверху.',spitter:'ПЛЕВУН: присядь под сгустком или отбей его саблей.',heavy:'УТОПЛЕННИК: перепрыгни волну. После удара он уязвим.'};this.emit('caption',tips[marker])}
  }
@@ -252,25 +255,28 @@ class SabbathGame{
  }
  tickEnemy(e,dt){
   if(['lancer','captain'].includes(e.type)){this.tickGuard(e,dt);return;}
-  const p=this.player,cfg=TYPES[e.type];if(e.phase==='buried'){if(Math.abs(e.x-p.x)<430){e.phase='emerge';e.timer=1.1;this.emit('rise',{x:e.x,heavy:e.heavy})}return}if(e.phase==='emerge'){e.timer-=dt;if(e.timer<=0){e.phase='idle';e.timer=0}return}e.flash=Math.max(0,e.flash-dt);e.broken=Math.max(0,e.broken-dt);e.staggerGuard=Math.max(0,(e.staggerGuard||0)-dt);if(e.elite&&!e.enraged&&e.hp<e.maxHp*.5){e.enraged=true;this.emit('caption','СТРАЖ ЯРОСТЕН. Второй удар следует сразу.');}e.walk=false;if(e.dead){e.death=Math.max(0,e.death-dt*.8);return}
-  const dist=Math.abs(e.x-p.x);e.timer-=dt;if(e.echo>0){e.echo-=dt;if(e.echo<=0){this.spawnShot(e,'wave',-1);this.spawnShot(e,'wave',1);this.emit('enemyStrike',{x:e.x,heavy:true,type:'heavy'})}}if(e.phase!=='windup'&&e.phase!=='strike')e.face=e.x>p.x?-1:1;
+  const p=this.player,cfg=TYPES[e.type];if(e.phase==='buried'){if(Math.abs(e.x-p.x)<430){e.phase='emerge';e.timer=1.1;this.emit('rise',{x:e.x,heavy:e.heavy})}return}if(e.phase==='emerge'){e.timer-=dt;if(e.timer<=0){e.phase='idle';e.timer=0}return}e.flash=Math.max(0,e.flash-dt);e.broken=Math.max(0,e.broken-dt);e.staggerGuard=Math.max(0,(e.staggerGuard||0)-dt);if(e.elite&&!e.enraged&&e.hp<e.maxHp*.5){e.enraged=true;this.emit('caption','СТРАЖ В ЯРОСТИ. Следующая серия — две волны.');}e.walk=false;if(e.dead){e.death=Math.max(0,e.death-dt*.8);return}
+  const dist=Math.abs(e.x-p.x);e.timer-=dt;if(!e.heavy&&e.phase!=='windup'&&e.phase!=='strike')e.face=e.x>p.x?-1:1;
   if(e.volley>0){e.volley-=dt;if(e.volley<=0)this.spawnShot(e,'lead',e.lockedFace);}
   if(e.phase==='hurt'){if(e.timer<=0){e.phase='recover';e.timer=.3}return}
   if(e.phase==='windup'&&e.timer<=0){e.phase='strike';e.timer=e.type==='crawler'?.40:e.type==='gunner'&&e.move==='butt'?BUTT.active:.18;e.face=e.lockedFace;
    if(e.type==='gunner'&&e.move!=='butt'){this.spawnShot(e,'lead',e.face);e.volley=.18;e.timer=.32;}
    if(e.type==='spitter')this.spawnShot(e,'spit',e.face);
-   if(e.heavy){this.spawnShot(e,'wave',-1);this.spawnShot(e,'wave',1);if(e.enraged)e.echo=.38}
-   if(e.heavy||e.type==='cutter')this.strikeBarrels(e,cfg.reach);
+   if(e.heavy){this.spawnShot(e,'wave',-1);this.spawnShot(e,'wave',1);e.waveIndex=(e.waveIndex||0)+1;}
+   if(e.heavy&&e.waveIndex===1||e.type==='cutter')this.strikeBarrels(e,cfg.reach);
    this.emit('enemyStrike',{x:e.x,heavy:e.heavy,type:e.type});
   }
   if(e.phase==='strike'){
    if(e.type==='crawler')e.x+=e.lockedFace*395*dt;
    const butt=e.type==='gunner'&&e.move==='butt',front=(p.x-e.x)*e.lockedFace>=-24,range=butt?BUTT.reach:e.type==='crawler'?57:cfg.reach;
-   if((butt||!['spitter','gunner'].includes(e.type))&&!e.hitPlayer&&Math.abs(p.x-e.x)<range&&front&&p.z<(butt?BUTT.height:e.type==='crawler'?42:70)){this.hurt(butt?BUTT.damage:cfg.damage,{x:e.x,enemyType:e.type,move:e.move});e.hitPlayer=true}
-   if(e.timer<=0){e.phase='recover';e.timer=butt?BUTT.recover:cfg.recover}return;
+   if((butt||!['spitter','gunner'].includes(e.type))&&!(e.heavy&&e.waveIndex>1)&&!e.hitPlayer&&Math.abs(p.x-e.x)<range&&front&&p.z<(butt?BUTT.height:e.type==='crawler'?42:70)){this.hurt(butt?BUTT.damage:cfg.damage,{x:e.x,enemyType:e.type,move:e.move});e.hitPlayer=true}
+   if(e.timer<=0){
+    if(e.heavy&&e.waveIndex<e.waveTotal){e.phase='windup';e.timer=e.windupDuration=.30;this.emit('warning',{x:e.x,type:e.type,move:'wave',low:true,enraged:true,followup:true});}
+    else{e.phase='recover';e.timer=butt?BUTT.recover:cfg.recover;}
+   }return;
   }
   if(e.phase==='recover'){if(e.timer<=0)e.phase='idle';else return}
-  if(e.phase!=='idle'||dist>470)return;
+  if(e.phase!=='idle'||dist>470)return;e.face=e.x>p.x?-1:1;
   if(this.yieldEnemy(e,dt))return;
   const onScreen=e.x>=this.cam+24&&e.x<=this.cam+this.viewWidth-24;
   const active=this.enemies.filter(n=>!n.dead&&(n.phase==='windup'||n.phase==='strike')).length;
