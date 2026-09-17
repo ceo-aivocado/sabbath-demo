@@ -32,16 +32,16 @@ main{min-width:0;max-width:100vw}#stage,canvas{min-width:0}
  #touch span{display:none}
  #touch button{position:absolute;pointer-events:auto;width:54px;min-width:54px;height:54px;min-height:54px;padding:0;border-radius:50%;border:1px solid #d8c59c80;background:#111b2a85;color:#eee3cf;font:8px Arial;letter-spacing:.2px;box-shadow:0 2px 12px #0004;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
  /* Larger movement circles almost meet; their shared pad handles diagonals. */
- #touch{--left-edge:max(18px,env(safe-area-inset-left));--edge:max(18px,env(safe-area-inset-right));--base:max(12px,env(safe-area-inset-bottom));--pad-step:64px;--move-size:76px;--move-step:56px}
- #move-pad{position:absolute;left:var(--left-edge);bottom:var(--base);width:calc(var(--move-size) + var(--move-step)*2);height:calc(var(--move-size) + var(--move-step)*2);pointer-events:auto;touch-action:none}
+ #touch{--left-edge:max(18px,env(safe-area-inset-left));--edge:max(18px,env(safe-area-inset-right));--base:max(12px,env(safe-area-inset-bottom));--pad-step:64px;--move-size:64.6px;--move-step:56px;--move-inset:5.7px}
+ #move-pad{position:absolute;left:var(--left-edge);bottom:var(--base);width:188px;height:188px;pointer-events:auto;touch-action:none}
  #move-pad::before{content:"";position:absolute;inset:24px;border-radius:50%;background:#10182755;border:1px solid #d8c59c30;pointer-events:none}
  #move-pad::after{content:"";position:absolute;left:calc(50% - 5px);top:calc(50% - 5px);width:10px;height:10px;border:1px solid #d8c59c70;border-radius:50%;pointer-events:none}
  #move-pad.active::before{background:#99805a25;border-color:#d8c59c60}
- #touch #move-pad button{width:var(--move-size);min-width:var(--move-size);height:var(--move-size);min-height:var(--move-size);font-size:30px}
- #touch button[data-key="a"]{left:0;bottom:var(--move-step)}
- #touch button[data-key=" "]{left:var(--move-step);bottom:calc(var(--move-step)*2)}
- #touch button[data-key="d"]{left:calc(var(--move-step)*2);bottom:var(--move-step)}
- #touch button[data-key="x"]{left:var(--move-step);bottom:0}
+ #touch #move-pad button{width:var(--move-size);min-width:var(--move-size);height:var(--move-size);min-height:var(--move-size);font-size:25.5px}
+ #touch button[data-key="a"]{left:var(--move-inset);bottom:calc(var(--move-step) + var(--move-inset))}
+ #touch button[data-key=" "]{left:calc(var(--move-step) + var(--move-inset));bottom:calc(var(--move-step)*2 + var(--move-inset))}
+ #touch button[data-key="d"]{left:calc(var(--move-step)*2 + var(--move-inset));bottom:calc(var(--move-step) + var(--move-inset))}
+ #touch button[data-key="x"]{left:calc(var(--move-step) + var(--move-inset));bottom:var(--move-inset)}
  #touch button[data-key="v"]{right:calc(var(--edge) + var(--pad-step));bottom:calc(var(--base) + var(--pad-step)*2);font-size:9px}
  #touch button[data-key="Shift"]{right:calc(var(--edge) + var(--pad-step)*2);bottom:calc(var(--base) + var(--pad-step));font-size:10px}
  #touch button[data-key="j"]{right:var(--edge);bottom:calc(var(--base) + var(--pad-step) - 4px);width:62px;min-width:62px;height:62px;min-height:62px;background:#9e784dad;color:#fff3d2;font-size:11px}
@@ -119,9 +119,17 @@ body[data-scene="house"] #move-pad{pointer-events:none}
 #test-heal span{font:23px/22px Arial;display:block}#test-heal small{font:7px/10px Arial;margin:0;letter-spacing:.3px;color:inherit}
 #test-heal:disabled{cursor:default;opacity:.4}.desktop #test-heal{left:calc(max(14px,env(safe-area-inset-left)) + 190px)}
 body[data-scene="house"] #test-heal{display:none}
+
+#touch #move-pad button.held{transform:none}
+#update-status{max-width:300px;margin:8px auto 0;font:11px/1.4 Arial;color:#b6bcae;letter-spacing:0}
+@media(orientation:landscape) and (max-height:350px){
+ #menu .eyebrow{margin-bottom:4px}#menu h2{font-size:22px;margin:4px 0}
+ #menu #endcopy{font-size:11px;margin-bottom:8px}
+ #menu #sound{margin-top:8px}#menu .secondary{margin-top:6px}
+}
 </style></head>
 <body><script>
-window.SABBATH_BUILD={release:"v34"};
+window.SABBATH_BUILD={release:"v35"};
 if(location.pathname.endsWith('/desktop.html')){
  document.body.classList.add('desktop');document.title='Sabbath Desktop';
  document.querySelector('link[rel="manifest"]').setAttribute('href','desktop.webmanifest');
@@ -131,7 +139,7 @@ if(location.pathname.endsWith('/desktop.html')){
 <div id="hud" hidden><div class="vitals"><div class="name">ЯРОМІР <span id="hptext">100</span></div><div class="bar"><i id="health"></i></div><div class="bar nav"><i id="power"></i></div><small id="powertext">НАВЬ · D</small></div><div class="objective"><span id="area">ПРИСТАНЬ</span><strong id="kills">0 <em>/ 10</em></strong><small>УПЫРЕЙ УНИЧТОЖЕНО</small></div><div id="boss-hud" hidden><span id="boss-name">СОТНИК СТОРОЖИ</span><div><i id="boss-health"></i></div></div><button id="test-heal" aria-label="Восстановить здоровье для теста (H)" title="Хилка для теста · H"><span aria-hidden="true">+</span><small>ХИЛКА</small></button><button id="pause" aria-label="Пауза">Ⅱ</button></div>
 <div id="story-copy" hidden><div id="story-title"></div><p id="story-text"></p></div><button id="interact-hint" hidden></button><div id="caption" role="status"></div><div id="toast" role="status"></div>
 <div class="overlay" id="intro"><div class="intro-copy"><div class="eyebrow">ПОЛТАВСКАЯ СЛОБОДА · ПОСЛЕ НАБЕГА</div><h1>Пепел<br>у переправы</h1><p>Река принесла его домой.<br>Тишина встретила первой.</p><p class="brief">Пройди к дому через разорённую слободу.<br>Пять боевых глав: от переправы до Сторожи.<br>Пустой дом, мокрые сёла, сгоревший скит.</p><button class="primary" id="start" disabled>ЗАГРУЗКА · 0%</button><div id="load-status" role="status" aria-live="polite"><span id="load-copy">Готовим сцену…</span><div id="load-meter" role="progressbar" aria-label="Подготовка сцены" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="load-fill"></i></div></div><button id="fresh-start" class="secondary" hidden>НОВАЯ ИГРА</button><div class="keys-preview">← → — идти <b>·</b> S — сабля <b>·</b> Shift — рывок <b>·</b> ↓+Shift / Q — отскок<br>Пробел / ↑ — прыжок <b>·</b> ↓ — присесть <b>·</b> D — Навь <b>·</b> A — кортик <b>·</b> H — хилка (тест)</div></div><nav class="edition-links" aria-label="Вариант управления"><a href="mobile.html">Sabbath Mobile</a><span>·</span><a href="desktop.html">Sabbath Desktop</a></nav><div class="intro-note">СИЛА ИМЕЕТ ЦЕНУ <span>✦</span></div></div>
-<div class="overlay center" id="menu" hidden><div><div class="eyebrow" id="endlabel">ПАУЗА</div><h2 id="endtitle">Тишина между ударами</h2><p id="endcopy"></p><button class="primary" id="continue-level" hidden>ПРОДОЛЖИТЬ ПУТЬ →</button><button class="primary" id="resume">ПРОДОЛЖИТЬ</button><button id="sound" aria-label="Включить звук">ЗВУК: ВЫКЛ</button><button class="secondary" id="new-run" hidden>С ПЕРЕПРАВЫ ЗАНОВО</button><button class="secondary" id="restart">НАЧАТЬ ЗАНОВО</button></div></div>
+<div class="overlay center" id="menu" hidden><div><div class="eyebrow" id="endlabel">ПАУЗА</div><h2 id="endtitle">Тишина между ударами</h2><p id="endcopy"></p><button class="primary" id="continue-level" hidden>ПРОДОЛЖИТЬ ПУТЬ →</button><button class="primary" id="resume">ПРОДОЛЖИТЬ</button><button id="sound" aria-label="Включить звук">ЗВУК: ВЫКЛ</button><button class="secondary" id="update-game" hidden>ОБНОВИТЬ ИГРУ</button><small id="update-status" role="status" hidden></small><button class="secondary" id="new-run" hidden>С ПЕРЕПРАВЫ ЗАНОВО</button><button class="secondary" id="restart">НАЧАТЬ ЗАНОВО</button></div></div>
 <div id="touch" aria-label="Сенсорное управление"><div id="move-pad" role="group" aria-label="Крестовина движения: диагонали совмещают действия"><button aria-label="Идти влево" data-key="a">←</button><button aria-label="Прыжок" data-key=" ">↑</button><button aria-label="Идти вправо" data-key="d">→</button><button data-key="x" aria-label="Приседание — переключить" aria-pressed="false">↓</button></div><button data-key="v" aria-label="Бросить кортик">КОРТИК 3</button><button data-key="Shift">РЫВОК</button><button data-key="j">САБЛЯ</button><button data-key="e">НАВЬ</button></div>
 </section><footer><span><kbd>←</kbd><kbd>→</kbd> движение</span><span><kbd>Пробел</kbd> прыжок</span><span><kbd>S</kbd> сабля</span><span><kbd>Shift</kbd> рывок</span><span><kbd>D</kbd> Навь</span><span><kbd>Esc</kbd> пауза</span><div>ПЯТЬ ДОРОГ. ОДНА ПРОПАВШАЯ СЕМЬЯ.</div></footer><div id="rotate-hint"><div class="rotate-brand">SABBATH</div><div class="rotate-subtitle">Пепел у переправы</div><div class="rotate-symbol" aria-hidden="true">↻</div><p>Поверните телефон горизонтально</p></div></main><script>/* Five playable episodes; the house is a separate interlude after episode one. */
 (function(root){
@@ -731,6 +739,12 @@ function releasePointer(id,completed=false){const state=padPointers.get(id);if(c
 function clearTouch(){mouseAttack=false;keyboardTaps.clear();lastBackTap=null;crouchToggle=false;touchPointers.clear();padPointers.clear();paintHeld()}
 const padSectors=[['d'],['d','x'],['x'],['a','x'],['a'],['a',' '],[' '],['d',' ']];
 function padSectorAt(x,y,previous=null){
+ // A visible circle always owns its full circular contact area. The gaps
+ // belong to the eight-way pad, so corner presses on UP cannot steer sideways.
+ for(const [key,sector] of [['a',4],[' ',6],['d',0],['x',2]]){
+  const b=movePad.querySelector('[data-key="'+key+'"]'),r=b.getBoundingClientRect();
+  if(r.width&&Math.hypot(x-r.x-r.width/2,y-r.y-r.height/2)<=r.width/2)return sector;
+ }
  const r=movePad.getBoundingClientRect(),dx=x-r.x-r.width/2,dy=y-r.y-r.height/2;
  if(Math.hypot(dx,dy)<14||Math.abs(dx)>r.width/2+20||Math.abs(dy)>r.height/2+20)return null;
  const angle=Math.atan2(dy,dx),step=Math.PI/4;
@@ -1105,10 +1119,10 @@ function loop(now){if(phonePortrait()!==document.body.classList.contains('phone-
 // Read-only state export for reproducible local browser checks.
 window.sabbath={game,keys,ready:()=>ready,loading:()=>({...loading,failed:[...loading.failed]}),render};loadAssets();requestAnimationFrame(loop);
 </script><script>if('serviceWorker' in navigator && ['https:','http:'].includes(location.protocol)){
- let hadController=!!navigator.serviceWorker.controller,pending=false,reloading=false,registration,registering=false;
+ let hadController=!!navigator.serviceWorker.controller,pending=false,reloading=false,registration,registering=false,manualRunning=false;
  // Pauses and results still belong to this run. Only the visible title is safe
  // to reload; the new worker can prepare an entire release during play.
- function applyUpdate(){if(pending&&!reloading&&!document.hidden&&window.sabbath?.game.mode==='intro'){reloading=true;location.reload()}}
+ function applyUpdate(){if(pending&&!reloading&&!manualRunning&&!document.hidden&&window.sabbath?.game.mode==='intro'){reloading=true;location.reload()}}
  function compareRelease(){
   const controller=navigator.serviceWorker.controller;if(!controller||!window.SABBATH_BUILD)return;
   const channel=new MessageChannel(),timeout=setTimeout(()=>channel.port1.close(),3000);
@@ -1120,6 +1134,36 @@ window.sabbath={game,keys,ready:()=>ready,loading:()=>({...loading,failed:[...lo
  function register(){
   if(registering)return;registering=true;
   navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>{registration=reg;compareRelease();checkUpdate()}).catch(()=>{registering=false});
+ }
+ const updateButton=document.getElementById('update-game'),updateStatus=document.getElementById('update-status');
+ function awaitActivation(worker){
+  return new Promise((resolve,reject)=>{
+   const timeout=setTimeout(()=>finish(new Error('Update timed out')),90000);
+   function finish(error){clearTimeout(timeout);worker.removeEventListener('statechange',changed);error?reject(error):resolve()}
+   function changed(){if(worker.state==='activated')finish();else if(worker.state==='redundant')finish(new Error('Incomplete update'))}
+   worker.addEventListener('statechange',changed);changed();
+  });
+ }
+ if(updateButton){
+  updateButton.hidden=false;
+  updateButton.addEventListener('click',async()=>{
+   if(manualRunning||reloading)return;
+   manualRunning=true;updateButton.disabled=true;updateStatus.hidden=false;updateStatus.textContent='Проверяем обновление…';
+   try{
+    const reg=registration||await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});registration=reg;
+    // Track the installing worker even if a failed install becomes redundant
+    // before update() resolves and disappears from registration.installing.
+    let candidate=reg.installing||reg.waiting;
+    const found=()=>{candidate=reg.installing||candidate};reg.addEventListener('updatefound',found);
+    try{await reg.update()}finally{reg.removeEventListener('updatefound',found)}
+    candidate=reg.installing||reg.waiting||candidate;
+    if(candidate){updateStatus.textContent='Загружаем игру…';await awaitActivation(candidate)}
+    updateStatus.textContent='Готово. Открываем игру…';reloading=true;location.reload();
+   }catch(error){
+    updateStatus.textContent='Не удалось обновить игру. Проверь интернет и попробуй ещё раз.';
+    updateButton.disabled=false;
+   }finally{manualRunning=false}
+  });
  }
  // First visit: images are verified and cached by the loader before install.
  // A failed loader still registers so a complete newer release can recover it.

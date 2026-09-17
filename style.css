@@ -31,16 +31,16 @@ main{min-width:0;max-width:100vw}#stage,canvas{min-width:0}
  #touch span{display:none}
  #touch button{position:absolute;pointer-events:auto;width:54px;min-width:54px;height:54px;min-height:54px;padding:0;border-radius:50%;border:1px solid #d8c59c80;background:#111b2a85;color:#eee3cf;font:8px Arial;letter-spacing:.2px;box-shadow:0 2px 12px #0004;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
  /* Larger movement circles almost meet; their shared pad handles diagonals. */
- #touch{--left-edge:max(18px,env(safe-area-inset-left));--edge:max(18px,env(safe-area-inset-right));--base:max(12px,env(safe-area-inset-bottom));--pad-step:64px;--move-size:76px;--move-step:56px}
- #move-pad{position:absolute;left:var(--left-edge);bottom:var(--base);width:calc(var(--move-size) + var(--move-step)*2);height:calc(var(--move-size) + var(--move-step)*2);pointer-events:auto;touch-action:none}
+ #touch{--left-edge:max(18px,env(safe-area-inset-left));--edge:max(18px,env(safe-area-inset-right));--base:max(12px,env(safe-area-inset-bottom));--pad-step:64px;--move-size:64.6px;--move-step:56px;--move-inset:5.7px}
+ #move-pad{position:absolute;left:var(--left-edge);bottom:var(--base);width:188px;height:188px;pointer-events:auto;touch-action:none}
  #move-pad::before{content:"";position:absolute;inset:24px;border-radius:50%;background:#10182755;border:1px solid #d8c59c30;pointer-events:none}
  #move-pad::after{content:"";position:absolute;left:calc(50% - 5px);top:calc(50% - 5px);width:10px;height:10px;border:1px solid #d8c59c70;border-radius:50%;pointer-events:none}
  #move-pad.active::before{background:#99805a25;border-color:#d8c59c60}
- #touch #move-pad button{width:var(--move-size);min-width:var(--move-size);height:var(--move-size);min-height:var(--move-size);font-size:30px}
- #touch button[data-key="a"]{left:0;bottom:var(--move-step)}
- #touch button[data-key=" "]{left:var(--move-step);bottom:calc(var(--move-step)*2)}
- #touch button[data-key="d"]{left:calc(var(--move-step)*2);bottom:var(--move-step)}
- #touch button[data-key="x"]{left:var(--move-step);bottom:0}
+ #touch #move-pad button{width:var(--move-size);min-width:var(--move-size);height:var(--move-size);min-height:var(--move-size);font-size:25.5px}
+ #touch button[data-key="a"]{left:var(--move-inset);bottom:calc(var(--move-step) + var(--move-inset))}
+ #touch button[data-key=" "]{left:calc(var(--move-step) + var(--move-inset));bottom:calc(var(--move-step)*2 + var(--move-inset))}
+ #touch button[data-key="d"]{left:calc(var(--move-step)*2 + var(--move-inset));bottom:calc(var(--move-step) + var(--move-inset))}
+ #touch button[data-key="x"]{left:calc(var(--move-step) + var(--move-inset));bottom:var(--move-inset)}
  #touch button[data-key="v"]{right:calc(var(--edge) + var(--pad-step));bottom:calc(var(--base) + var(--pad-step)*2);font-size:9px}
  #touch button[data-key="Shift"]{right:calc(var(--edge) + var(--pad-step)*2);bottom:calc(var(--base) + var(--pad-step));font-size:10px}
  #touch button[data-key="j"]{right:var(--edge);bottom:calc(var(--base) + var(--pad-step) - 4px);width:62px;min-width:62px;height:62px;min-height:62px;background:#9e784dad;color:#fff3d2;font-size:11px}
@@ -118,3 +118,11 @@ body[data-scene="house"] #move-pad{pointer-events:none}
 #test-heal span{font:23px/22px Arial;display:block}#test-heal small{font:7px/10px Arial;margin:0;letter-spacing:.3px;color:inherit}
 #test-heal:disabled{cursor:default;opacity:.4}.desktop #test-heal{left:calc(max(14px,env(safe-area-inset-left)) + 190px)}
 body[data-scene="house"] #test-heal{display:none}
+
+#touch #move-pad button.held{transform:none}
+#update-status{max-width:300px;margin:8px auto 0;font:11px/1.4 Arial;color:#b6bcae;letter-spacing:0}
+@media(orientation:landscape) and (max-height:350px){
+ #menu .eyebrow{margin-bottom:4px}#menu h2{font-size:22px;margin:4px 0}
+ #menu #endcopy{font-size:11px;margin-bottom:8px}
+ #menu #sound{margin-top:8px}#menu .secondary{margin-top:6px}
+}

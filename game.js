@@ -139,6 +139,12 @@ function releasePointer(id,completed=false){const state=padPointers.get(id);if(c
 function clearTouch(){mouseAttack=false;keyboardTaps.clear();lastBackTap=null;crouchToggle=false;touchPointers.clear();padPointers.clear();paintHeld()}
 const padSectors=[['d'],['d','x'],['x'],['a','x'],['a'],['a',' '],[' '],['d',' ']];
 function padSectorAt(x,y,previous=null){
+ // A visible circle always owns its full circular contact area. The gaps
+ // belong to the eight-way pad, so corner presses on UP cannot steer sideways.
+ for(const [key,sector] of [['a',4],[' ',6],['d',0],['x',2]]){
+  const b=movePad.querySelector('[data-key="'+key+'"]'),r=b.getBoundingClientRect();
+  if(r.width&&Math.hypot(x-r.x-r.width/2,y-r.y-r.height/2)<=r.width/2)return sector;
+ }
  const r=movePad.getBoundingClientRect(),dx=x-r.x-r.width/2,dy=y-r.y-r.height/2;
  if(Math.hypot(dx,dy)<14||Math.abs(dx)>r.width/2+20||Math.abs(dy)>r.height/2+20)return null;
  const angle=Math.atan2(dy,dx),step=Math.PI/4;
