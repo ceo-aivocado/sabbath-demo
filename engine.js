@@ -56,8 +56,18 @@ class SabbathGame{
   const p=this.player;if(this.mode!=='playing')return false;
   if(p.cooldown>0||p.evade>0||p.throwPending>0){this.attackBuffer=Math.max(.14,Math.min(.24,p.evade+.03));return false}
   p.throwTime=0;this.combo=this.comboAge<.95?this.combo%3+1:1;this.comboAge=0;
-  p.counterAttack=p.counter>0;p.airAttack=p.z>16;p.lowAttack=p.crouching&&!p.airAttack;p.attack=p.airAttack?.38:.34;p.cooldown=p.airAttack?.48:([0,.34,.39,.58][this.combo]);p.attackHit=false;p.attackFacing=p.face;this.attackTargets.clear();
-  if(p.airAttack)p.vz=Math.min(p.vz,-190);this.attackBuffer=0;this.emit('swing',p.airAttack?'air':this.combo);return true;
+  p.counterAttack=p.counter>0;p.airAttack=p.z>0||p.vz>0;p.lowAttack=p.crouching&&!p.airAttack;p.attack=p.airAttack?.38:.34;p.cooldown=p.airAttack?.48:([0,.34,.39,.58][this.combo]);p.attackHit=false;p.attackFacing=p.face;this.attackTargets.clear();
+  if(p.airAttack&&p.vz<=0)p.vz=Math.min(p.vz,-190);this.attackBuffer=0;this.emit('swing',p.airAttack?'air':this.combo);return true;
+ }
+ syncAttackStance(){
+  const p=this.player;if(p.attack<=0)return;
+  const airborne=p.z>0||p.vz>0,low=p.crouching&&!airborne;
+  // A landing keeps an aerial cleave intact. A deliberate duck changes stance.
+  if(p.airAttack&&!low)return;
+  if(!p.airAttack&&p.lowAttack===low&&!airborne)return;
+  // Redirect an uncommitted windup, never restart its timing or hit history.
+  // Once active, defensive movement cancels the remaining blade instead.
+  if(p.attack>.22){p.airAttack=airborne;p.lowAttack=low;}else p.attack=0;
  }
  resolveAttack(){
   const p=this.player;p.attackHit=true;const finisher=this.combo===3,reach=p.lowAttack?82:p.counterAttack?132:p.airAttack?104:finisher?120:104;let hits=0;
@@ -84,7 +94,7 @@ class SabbathGame{
   this.cancelThrow();p.crouching=false;p.landTime=0;p.evadeKind=kind;p.evadeDir=p.face*(kind==='back'?-1:1);p.evadeSpeed=kind==='back'?360:590;p.evade=kind==='back'?.18:.23;p.evadeCd=kind==='back'?.48:.70;p.inv=kind==='back'?.13:.26;p.attack=0;p.cooldown=Math.min(p.cooldown,.14);
   if(threat){p.counter=1.6;this.charge(25);this.stats.perfectDodges++;this.emit('perfect',p.x)}this.emit('dodge',kind);return true;
  }
- jump(){const p=this.player;if(this.mode!=='playing')return false;if(p.z===0){p.crouching=false;p.landTime=0;p.vz=450;this.jumpBuffer=0;this.emit('jump');return true}this.jumpBuffer=.12;return false}
+ jump(){const p=this.player;if(this.mode!=='playing')return false;if(p.z===0&&p.vz<=0){p.crouching=false;p.landTime=0;p.vz=450;this.syncAttackStance();this.jumpBuffer=0;this.emit('jump');return true}this.jumpBuffer=.12;return false}
  knife(){const p=this.player;if(this.mode!=='playing'||p.throwCd>0||p.knives<=0||p.evade>0||p.attack>.22)return false;p.knives--;p.throwCd=.65;p.throwTime=.30;p.throwPending=.10;p.throwFacing=p.face;return true}
  releaseKnife(){const p=this.player;this.projectiles.push({id:this.nextProjectile++,kind:'dagger',friendly:true,x:p.x+p.throwFacing*34,z:p.z+(p.crouching?30:83),vx:p.throwFacing*700,vz:30,life:.8,damage:55,dead:false});this.emit('throw',p.x)}
  cancelThrow(){const p=this.player;if(p.throwPending>0)p.knives=Math.min(3,p.knives+1);p.throwPending=0;p.throwTime=0}
@@ -164,11 +174,13 @@ class SabbathGame{
   if(dist>cfg.reach-14||!onScreen){e.x+=e.face*cfg.speed*dt;e.walk=true}else if(active<2)this.beginEnemy(e);
  }
  tick(dt,input={}){
-  dt=clamp(dt,0,.05);if(this.mode==='house'){this.tickHouse(dt,input);return;}if(this.mode!=='playing')return;if(this.hitstop>0){this.hitstop=Math.max(0,this.hitstop-dt);return}
-  this.time+=dt;this.comboAge+=dt;const p=this.player;if(p.transform>0){p.transform=Math.max(0,p.transform-dt);if(p.transform===0)this.emit('transformed');}
+  dt=clamp(dt,0,.05);if(this.mode==='house'){this.tickHouse(dt,input);return;}if(this.mode!=='playing')return;const p=this.player;
+  p.crouching=!!input.crouch&&p.z===0&&p.vz<=0&&p.evade===0;this.syncAttackStance();
+  if(this.hitstop>0){this.hitstop=Math.max(0,this.hitstop-dt);return}
+  this.time+=dt;this.comboAge+=dt;if(p.transform>0){p.transform=Math.max(0,p.transform-dt);if(p.transform===0)this.emit('transformed');}
   this.shake=Math.max(0,this.shake-dt*15);for(const k of ['attack','cooldown','evade','evadeCd','inv','power','counter','throwCd','throwTime','landTime'])p[k]=Math.max(0,p[k]-dt);
   if(p.throwPending>0){p.throwPending=Math.max(0,p.throwPending-dt);if(p.throwPending===0)this.releaseKnife();}
-  p.crouching=!!input.crouch&&p.z===0&&p.vz<=0&&p.evade===0;if(p.attack>.08&&p.attack<=.22)this.resolveAttack();
+  if(p.attack>.08&&p.attack<=.22)this.resolveAttack();
   const axis=(input.right?1:0)-(input.left?1:0),beforeX=p.x;p.moving=!!axis&&p.attack<.12;
   if(axis&&p.evade<=0&&p.attack<=0&&p.throwTime===0)p.face=axis;
   if(p.evade>0){p.x+=p.evadeDir*p.evadeSpeed*dt;if(p.evadeKind==='back'){for(const e of this.enemies){if(e.dead||e.phase==='buried'||e.phase==='emerge')continue;const side=Math.sign(e.x-beforeX),radius=e.heavy?42:28;if(side===p.evadeDir&&(e.x-p.x)*side<radius&&Math.abs(e.x-beforeX)<radius+p.evadeSpeed*dt+1)p.x=e.x-side*radius;}}}else if(p.moving)p.x+=axis*(p.crouching?62:p.power>0?190:158)*dt;
