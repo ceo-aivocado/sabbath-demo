@@ -11,33 +11,62 @@ let last=0,clock=0,captionUntil=0,toastUntil=0,soundOn=true,audio=null,soundscap
 try{soundOn=localStorage.getItem('sabbath-sound')!=='off'}catch{}
 // All imagery is local; this game makes no network requests except loading its own files.
 const assets={hit:'assets/yaromir-hit.png',gunnerMelee:'assets/gunner-melee.png',dodge:'assets/yaromir-dodge.png',demonDodge:'assets/yaromir-demon-dodge.png',enemyWalk:'assets/enemies-walk.png',enemyCombat:'assets/enemies-combat.png',crouchWalk:'assets/yaromir-crouch-walk.png',air:'assets/yaromir-air.png',guardWalk:'assets/guards-walk.png',guardReady:'assets/guards-ready.png',villages:'assets/villages-panorama.png',skit:'assets/skit-panorama.png',fortress:'assets/fortress-panorama.png',guards:'assets/guards-atlas-v2.png',house:'assets/house-interior.png',sich:'assets/sich-panorama.png',gunner:'assets/gunner-atlas.png',throw:'assets/yaromir-throw.png',crouch:'assets/yaromir-crouch.png',demonWalk:'assets/yaromir-demon-walk.png',walk:'assets/yaromir-walk.png',hero:'assets/yaromir-atlas.png',demon:'assets/yaromir-demon-atlas.png',special:'assets/enemies-special.png',powder:'assets/powder-barrel.png',bg:'assets/background-panorama.png',props:'assets/props-atlas.png'};
-const loading={phase:'idle',loaded:0,total:Object.keys(assets).length,failed:[]};
+// The web builder fills this with immutable URLs, byte counts and SHA-256 hashes.
+// Standalone/file builds keep native Image loading and need no Fetch/CacheStorage.
+const assetInfo={};
+const received={};
+const loading={phase:'idle',loaded:0,total:Object.keys(assets).length,failed:[],bytes:0,totalBytes:Object.values(assetInfo).reduce((n,item)=>n+item.bytes,0)};
 let loadGeneration=0;
 function loadingProgress(){
- loading.loaded=Object.keys(art).length;const percent=Math.round(100*loading.loaded/loading.total);
+ loading.loaded=Object.keys(art).length;loading.bytes=Object.values(received).reduce((n,bytes)=>n+bytes,0);
+ const percent=loading.totalBytes?Math.min(99,Math.floor(100*loading.bytes/loading.totalBytes)):Math.round(100*loading.loaded/loading.total);
  $('start').textContent='ЗАГРУЗКА · '+percent+'%';$('load-fill').style.width=percent+'%';$('load-meter').setAttribute('aria-valuenow',String(percent));
 }
 async function loadAssets(){
- if(loading.phase==='loading'||ready)return;const generation=++loadGeneration,restoreFocus=document.activeElement===$('start');let timedOut=false;
+ if(loading.phase==='loading'||ready)return;const generation=++loadGeneration,restoreFocus=document.activeElement===$('start'),retry=new Set(loading.failed);let timedOut=false;
  function restoreButtonFocus(){if(restoreFocus&&[document.body,$('start')].includes(document.activeElement))$('start').focus();}
  loading.phase='loading';loading.failed=[];ready=false;$('start').disabled=true;$('fresh-start').hidden=true;$('load-status').hidden=false;$('load-status').classList.remove('failed');$('load-copy').textContent='Готовим сцену…';loadingProgress();
  const priority=['bg','hero','demon'],queue=Object.entries(assets).filter(([key])=>!art[key]).sort(([a],[b])=>(priority.includes(a)?priority.indexOf(a):3)-(priority.includes(b)?priority.indexOf(b):3)),active=new Set();let next=0;
- const deadline=setTimeout(()=>{timedOut=true;for(const cancel of [...active])cancel();},20000);
+ let deadline;
+ function progress(){if(timedOut||generation!==loadGeneration)return;clearTimeout(deadline);deadline=setTimeout(()=>{timedOut=true;for(const cancel of [...active])cancel();},20000);loadingProgress();}
+ for(const [key] of queue)received[key]=0;
+ progress();
  function one(key,url){return new Promise(resolve=>{
-  const image=new Image();let settled=false;
+  const image=new Image(),abort=new AbortController(),info=assetInfo[key];let settled=false,objectUrl=null;
   function finish(ok){
    if(settled)return;settled=true;active.delete(cancel);image.onload=image.onerror=null;
-   if(ok&&!timedOut&&generation===loadGeneration){art[key]=image;if(key==='bg')document.documentElement.style.setProperty('--scene-background',`url("${image.src}")`);loadingProgress();}
-   else image.removeAttribute('src');resolve();
+   if(ok&&!timedOut&&generation===loadGeneration){art[key]=image;if(key==='bg')document.documentElement.style.setProperty('--scene-background',`url("${image.src}")`);progress();}
+   else{abort.abort();image.removeAttribute('src');received[key]=0;}
+   // The background URL also backs the portrait splash; other decoded images
+   // retain their bitmap without retaining an extra compressed Blob allocation.
+   if(objectUrl&&(!ok||key!=='bg'))URL.revokeObjectURL(objectUrl);resolve();
   }
   const cancel=()=>finish(false);active.add(cancel);image.onload=()=>finish(image.naturalWidth>0);image.onerror=()=>finish(false);
-  try{image.src=url}catch{finish(false)}
+  if(!info){try{image.src=url}catch{finish(false)}return;}
+  (async()=>{
+   const response=await fetch(url,{signal:abort.signal,cache:retry.has(key)?'reload':'force-cache'});
+   if(!response.ok)throw new Error('Image unavailable');
+   const chunks=[];let size=0;
+   if(response.body){const reader=response.body.getReader();try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>info.bytes)throw new Error('Image size mismatch');chunks.push(value);received[key]=size;progress();}}finally{reader.releaseLock();}}
+   else{const data=await response.arrayBuffer();size=data.byteLength;chunks.push(data);received[key]=size;progress();}
+   if(size!==info.bytes)throw new Error('Image size mismatch');
+   const blob=new Blob(chunks,{type:info.mime});chunks.length=0;
+   const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer()))].map(n=>n.toString(16).padStart(2,'0')).join('');
+   if(hash!==info.sha256)throw new Error('Image checksum mismatch');
+   if(settled||timedOut||generation!==loadGeneration)return;
+   // On first visit the subsequent worker install can reuse these verified bytes.
+   // Cache failure must never block an otherwise playable online session.
+   if(window.SABBATH_BUILD&&'caches' in window){try{const cache=await caches.open('sabbath-mobile@'+new URL('./',location.href).pathname+':'+window.SABBATH_BUILD.release);if(retry.has(key)||!await cache.match(url))await cache.put(url,new Response(blob,{headers:{'Content-Type':info.mime,'Content-Length':String(size)}}));}catch{}}
+   if(settled||timedOut||generation!==loadGeneration)return;
+   objectUrl=URL.createObjectURL(blob);image.src=objectUrl;
+  })().catch(()=>finish(false));
  });}
  async function worker(){while(!timedOut&&next<queue.length&&generation===loadGeneration){const [key,url]=queue[next++];await one(key,url);}}
  await Promise.all([worker(),worker()]);clearTimeout(deadline);if(generation!==loadGeneration)return;
  loading.failed=Object.keys(assets).filter(key=>!art[key]);loading.loaded=Object.keys(art).length;
- if(loading.failed.length){loading.phase='failed';$('start').disabled=false;$('start').textContent='ПОВТОРИТЬ ЗАГРУЗКУ';$('load-status').classList.add('failed');$('load-copy').textContent=timedOut?'Подготовка заняла слишком долго. Нажми «Повторить загрузку».':'Не удалось подготовить сцену. Нажми «Повторить загрузку».';restoreButtonFocus();return;}
+ if(loading.failed.length){loading.phase='failed';$('start').disabled=false;$('start').textContent='ПОВТОРИТЬ ЗАГРУЗКУ';$('load-status').classList.add('failed');$('load-copy').textContent=timedOut?'Загрузка остановилась. Нажми «Повторить загрузку».':'Не удалось подготовить сцену. Нажми «Повторить загрузку».';restoreButtonFocus();window.dispatchEvent(new Event('sabbath:loadsettled'));return;}
  loading.phase='ready';ready=true;$('load-status').hidden=true;$('start').disabled=false;$('start').textContent=savedCheckpoint?'ПРОДОЛЖИТЬ ПУТЬ':'ВОЙТИ В СЛОБОДУ';$('fresh-start').hidden=!savedCheckpoint;restoreButtonFocus();
+ window.dispatchEvent(new Event('sabbath:loadsettled'));
 }
 const rand=(n)=>{let a=Math.sin(n*127.1+311.7)*43758.5453;return a-Math.floor(a)},clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.ceil(w),Math.ceil(h))}
