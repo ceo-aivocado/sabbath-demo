@@ -1,4 +1,4 @@
-const CACHE='sabbath-mobile-v15';
+const CACHE='sabbath-mobile-v16';
 // All editions contain the same atomic code/art bundle and select controls by URL.
 const FILES=['./index.html','./manifest.webmanifest','./desktop.webmanifest','./icons/icon-180.png','./icons/icon-192.png','./icons/icon-512.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES.map(url=>new Request(url,{cache:'reload'})))).then(()=>self.skipWaiting())));
