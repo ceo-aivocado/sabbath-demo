@@ -128,3 +128,6 @@ body.phone-portrait #rotate-hint p{font:16px/1.5 Arial;max-width:270px;color:#dc
 #load-fill{display:block;height:100%;width:0;background:#c4a569;transition:width .12s}
 #load-status.failed{color:#dcc799}
 #load-status.failed #load-meter{display:none}
+
+/* Combat hints stay above the thumb controls, with no banner covering the scene. */
+@media(orientation:landscape){body:not(.desktop):not([data-scene="house"]) #caption{top:clamp(80px,21vh,90px);bottom:auto;left:19%;width:62%;font:11px/1.35 Arial,sans-serif}}
