@@ -30,13 +30,17 @@ main{min-width:0;max-width:100vw}#stage,canvas{min-width:0}
  #touch{position:absolute;inset:0;display:block;height:auto;pointer-events:none;background:none}
  #touch span{display:none}
  #touch button{position:absolute;pointer-events:auto;width:54px;min-width:54px;height:54px;min-height:54px;padding:0;border-radius:50%;border:1px solid #d8c59c80;background:#111b2a85;color:#eee3cf;font:8px Arial;letter-spacing:.2px;box-shadow:0 2px 12px #0004;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
- /* Both thumb pads use the same 64px diamond spacing and an empty centre. */
- #touch{--left-edge:max(18px,env(safe-area-inset-left));--edge:max(18px,env(safe-area-inset-right));--base:max(12px,env(safe-area-inset-bottom));--pad-step:64px}
- #touch button[data-key="a"],#touch button[data-key="d"],#touch button[data-key=" "],#touch button[data-key="x"]{font-size:27px}
- #touch button[data-key="a"]{left:var(--left-edge);bottom:calc(var(--base) + var(--pad-step))}
- #touch button[data-key=" "]{left:calc(var(--left-edge) + var(--pad-step));bottom:calc(var(--base) + var(--pad-step)*2)}
- #touch button[data-key="d"]{left:calc(var(--left-edge) + var(--pad-step)*2);bottom:calc(var(--base) + var(--pad-step))}
- #touch button[data-key="x"]{left:calc(var(--left-edge) + var(--pad-step));bottom:var(--base)}
+ /* Larger movement circles almost meet; their shared pad handles diagonals. */
+ #touch{--left-edge:max(18px,env(safe-area-inset-left));--edge:max(18px,env(safe-area-inset-right));--base:max(12px,env(safe-area-inset-bottom));--pad-step:64px;--move-size:76px;--move-step:56px}
+ #move-pad{position:absolute;left:var(--left-edge);bottom:var(--base);width:calc(var(--move-size) + var(--move-step)*2);height:calc(var(--move-size) + var(--move-step)*2);pointer-events:auto;touch-action:none}
+ #move-pad::before{content:"";position:absolute;inset:24px;border-radius:50%;background:#10182755;border:1px solid #d8c59c30;pointer-events:none}
+ #move-pad::after{content:"";position:absolute;left:calc(50% - 5px);top:calc(50% - 5px);width:10px;height:10px;border:1px solid #d8c59c70;border-radius:50%;pointer-events:none}
+ #move-pad.active::before{background:#99805a25;border-color:#d8c59c60}
+ #touch #move-pad button{width:var(--move-size);min-width:var(--move-size);height:var(--move-size);min-height:var(--move-size);font-size:30px}
+ #touch button[data-key="a"]{left:0;bottom:var(--move-step)}
+ #touch button[data-key=" "]{left:var(--move-step);bottom:calc(var(--move-step)*2)}
+ #touch button[data-key="d"]{left:calc(var(--move-step)*2);bottom:var(--move-step)}
+ #touch button[data-key="x"]{left:var(--move-step);bottom:0}
  #touch button[data-key="v"]{right:calc(var(--edge) + var(--pad-step));bottom:calc(var(--base) + var(--pad-step)*2);font-size:9px}
  #touch button[data-key="Shift"]{right:calc(var(--edge) + var(--pad-step)*2);bottom:calc(var(--base) + var(--pad-step));font-size:10px}
  #touch button[data-key="j"]{right:var(--edge);bottom:calc(var(--base) + var(--pad-step) - 4px);width:62px;min-width:62px;height:62px;min-height:62px;background:#9e784dad;color:#fff3d2;font-size:11px}
@@ -106,3 +110,5 @@ body.phone-portrait #rotate-hint p{font:16px/1.5 Arial;max-width:270px;color:#dc
 @media(orientation:landscape){body:not(.desktop):not([data-scene="house"]) #caption{top:clamp(80px,21vh,90px);bottom:auto;left:19%;width:62%;font:11px/1.35 Arial,sans-serif}}
 
 @media(orientation:landscape){body:not(.desktop):not([data-scene="house"]) #toast{top:calc(clamp(80px,21vh,90px) + 40px);left:19%;width:62%;font:10px/1.3 Arial,sans-serif;letter-spacing:.5px}}
+
+body[data-scene="house"] #move-pad{pointer-events:none}
